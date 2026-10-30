@@ -1,0 +1,79 @@
+ACOUSTICS METER - INSTALL AS AN APP (Build 20261027-2)
+=======================================================
+
+What you have
+  index.html            the app
+  manifest.webmanifest  app name, icon and full-screen settings
+  sw.js                 lets it open and work offline
+  icons/                the app icon
+
+An installed app needs the files to be served from http://localhost or an
+https address once, so Chrome can install it. After that it opens full
+screen from your home screen and works without a connection.
+(It cannot be installed from a file or content:// address, and the
+microphone will not work from one either.)
+
+OPTION A - from this phone using Termux (what you used before)
+  1. Copy acoustics-meter-app.zip to your Downloads folder.
+  2. In Termux (first time only):   pkg install unzip python
+  3. Then:
+         termux-setup-storage
+         cd ~/storage/downloads
+         unzip -o acoustics-meter-app.zip
+         cd acoustics-meter-app
+         python3 -m http.server 8000
+  4. In Chrome open   http://localhost:8000/
+  5. Wait a few seconds, then in Chrome's menu (three dots) choose
+     "Install app" (or "Add to Home screen" then "Install").
+     You can also use the "Install as an app" button on the Setup tab.
+  6. Open Acoustics Meter from the new home screen icon. You can now
+     stop the Termux server; the app opens from its saved copy.
+
+  To update later: unzip the newer zip over the old folder, start the server
+  again, open the app once while the server is running (it picks up the new
+  files), then close and reopen it.
+
+OPTION B - put it on a free web host (no Termux needed)
+  Upload the whole acoustics-meter-app folder to any static https host
+  (for example GitHub Pages, Netlify Drop or Cloudflare Pages), open the
+  address in Chrome on the phone and install it as in step 5 above.
+
+First launch
+  Allow the Microphone (and Location and Camera if you use them for reports).
+  Installed apps remember these permissions.
+
+Notes
+  - Data (calibration, report details, theme) is stored by the app on the
+    phone and is kept for the address it was installed from. Installing from
+    a different address (for example a different port) starts with a clean
+    copy.
+  - If you change files, change the CACHE name at the top of sw.js (for
+    example to the new build number) so phones fetch the new version.
+
+Rotation and layout
+  - The app turns with your phone or tablet. In landscape the tabs move to a
+    rail on the left.
+  - Live tab layout: Setup > "Arrange Live tiles". Drag a tile by its title
+    bar, resize it from the orange corner, then press Done. Portrait and
+    landscape keep their own layouts. "Reset Live layout" puts them back.
+
+Requirements
+  Android: a current Chrome. The Live gauge sizing needs Chrome 105 or newer
+    (any current Chrome has it). Current Chrome releases need Android 10 or
+    newer; phones on Android 8 or 9 stay on an older Chrome and may still run
+    the app but are not tested. Allow Microphone (and Location and Camera if
+    you use them for reports).
+  iPhone / iPad: iOS 16 or newer. The app must be opened from an https address
+    (there is no Termux on iOS), then in Safari use Share > Add to Home
+    Screen. Not tested on iOS. iOS applies its own processing to microphone
+    input, which can affect calibration and decay measurements.
+  Not tested on anything except desktop Chrome with simulated audio, so check
+  it on your own device.
+
+After installing - what can be deleted
+  Once the app is installed and opens with the Termux server stopped (try it
+  in airplane mode first), the unzipped acoustics-meter-app folder is no
+  longer needed: Chrome keeps its own saved copy. Keep acoustics-meter-app.zip
+  (it is small) as a backup, because you need it, or a newer one, to
+  reinstall or update. Do NOT clear Chrome's site data or storage for the app:
+  that removes the saved copy and your calibration, report details and layout.

@@ -1,0 +1,1605 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#17191d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Acoustics Meter">
+<script>try{var t=JSON.parse(localStorage.getItem('theme')||'"dark"');if(t==='system')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<title>Acoustics Meter</title>
+<style>
+:root{
+  --face:#17191d; --tile:#21242a; --tile2:#2a2e35; --line:#383d46; --text:#e8e4dc; --dim:#9aa0a8;
+  --lcd:#f2a93b; --trace:#5ec8d8; --ok:#6fcf8e; --warn:#f2a93b; --bad:#e5584f;
+  --safe-b:0px; --safe-t:0px;
+  --input:#14161a; --nav:#111316; --pill:#232528; --btn2:#25272b; --canvas:#14161a; --prog:#0f1114; --disc:#2a2518; --toast:#111;
+  --big:#ececec; --strong:#e8e4dc; --soft:#cfcfd4; --on-lcd:#1a1405;
+  --b-pass:#1f3a2a; --b-fail:#44221f; --b-na:#2b2e35; --b-warn:#44361b;
+}
+:root[data-theme="light"]{
+  --face:#f2f3f5; --tile:#ffffff; --tile2:#e8eaee; --line:#cfd3da; --text:#1c1f24; --dim:#5d6470;
+  --lcd:#c97800; --trace:#0b7c92; --ok:#1d7a3f; --warn:#a15f00; --bad:#c0392b;
+  --input:#ffffff; --nav:#ffffff; --pill:#e6e9ee; --btn2:#e4e7ec; --canvas:#ffffff; --prog:#dfe3e8; --disc:#fff4d6; --toast:#ffffff;
+  --big:#1c1f24; --strong:#1c1f24; --soft:#3a3f47; --on-lcd:#ffffff;
+  --b-pass:#d6f1df; --b-fail:#fbdcd9; --b-na:#e4e7ec; --b-warn:#fdf0cf;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--face);color:var(--text);font:15px/1.4 Bahnschrift,"Segoe UI",Roboto,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+html{height:100%;overflow:hidden}
+body{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;padding-top:var(--safe-t)}
+button,select,input,textarea{font:inherit;color:inherit}
+button{background:var(--tile2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer;min-height:40px}
+button:hover{border-color:var(--dim)}
+button.primary{background:var(--lcd);color:var(--on-lcd);border-color:var(--lcd);font-weight:600}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--trace);outline-offset:2px}
+select,input,textarea{background:var(--input);border:1px solid var(--line);border-radius:8px;padding:8px;min-height:40px;width:100%}
+textarea{min-height:70px}
+label{display:block;font-size:13px;color:var(--dim)}
+label>*{margin-top:4px}
+h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
+h2{font-size:15px;margin:0;font-weight:600}
+h3{font-size:14px;margin:16px 0 6px}
+header.top{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:10px 12px;flex:0 0 auto;background:var(--face);border-bottom:1px solid var(--line)}
+.pill{font-size:12px;padding:3px 9px;border-radius:99px;border:1px solid var(--line);color:var(--dim);max-width:46vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill.ok{color:var(--ok);border-color:var(--ok)} .pill.bad{color:var(--bad);border-color:var(--bad)} .pill.warn{color:var(--warn);border-color:var(--warn)}
+main{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:12px}
+.tab{max-width:820px;margin-left:auto;margin-right:auto}
+.tab{display:none} .tab.active{display:block}
+nav.tabs{flex:0 0 auto;display:grid;grid-template-columns:repeat(5,1fr);background:var(--nav);border-top:1px solid var(--line);padding-bottom:var(--safe-b);z-index:6}
+nav.tabs button{border:0;border-radius:0;background:transparent;min-height:56px;color:var(--dim)}
+nav.tabs button.on{color:var(--lcd);box-shadow:inset 0 3px 0 var(--lcd)}
+.bar .wide{grid-column:1/-1}
+.bar{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:12px}
+.tile,.card{background:var(--tile);border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden}
+.tile>header,.card>header{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--tile2)}
+.tools{display:flex;gap:4px}
+.tools button{min-height:32px;min-width:32px;padding:2px 8px}
+.body{padding:10px}
+
+.gaugeWrap{display:grid;justify-items:center}
+svg.gauge{width:100%;max-width:420px;height:auto}
+.big{font-family:"Bahnschrift","Segoe UI",sans-serif;font-variant-numeric:tabular-nums;font-size:64px;line-height:1;color:var(--lcd);font-weight:600;text-shadow:0 0 14px rgba(242,169,59,.28)}
+.unit{color:var(--dim);font-size:14px;text-align:center}
+.sub{display:flex;gap:18px;justify-content:center;color:var(--dim);font-size:14px;margin-top:6px;font-variant-numeric:tabular-nums}
+.sub b{color:var(--text);font-weight:600}
+.refText{font-size:18px;min-height:2.6em;display:flex;align-items:center}
+.led{display:grid;grid-template-columns:repeat(36,1fr);gap:2px;height:34px}
+.led i{background:#0f1114;border-radius:2px;border:1px solid #2a2d33}
+.led i.on.g{background:#46c47a;box-shadow:0 0 6px #46c47a88} .led i.on.y{background:#f2c13b;box-shadow:0 0 6px #f2c13b88} .led i.on.r{background:#e5584f;box-shadow:0 0 6px #e5584f88}
+.led i.pk{outline:2px solid var(--strong)}
+.ledScale{display:flex;justify-content:space-between;color:var(--dim);font-size:11px;margin-top:4px}
+canvas.chart{width:100%;height:230px;display:block;border-radius:8px}
+.note{font-size:12.5px;color:var(--dim)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row>*{flex:0 0 auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--dim);font-weight:600}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12.5px;font-weight:600}
+.badge.pass{background:var(--b-pass);color:var(--ok)} .badge.fail{background:var(--b-fail);color:var(--bad)} .badge.na{background:var(--b-na);color:var(--dim)} .badge.warn{background:var(--b-warn);color:var(--warn)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px}
+.kv dt{color:var(--dim)} .kv dd{margin:0}
+.prog{height:8px;background:var(--prog);border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+.prog>div{height:100%;width:0;background:var(--trace)}
+.photos{display:flex;gap:8px;flex-wrap:wrap}
+.photos div{position:relative}
+.photos img{width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.photos button{position:absolute;top:2px;right:2px;min-height:24px;padding:0 6px}
+dialog{background:var(--tile);color:var(--text);border:1px solid var(--line);border-radius:14px;max-width:min(640px,94vw);max-height:86vh;padding:0}
+dialog::backdrop{background:#000a}
+dialog .in{padding:14px 16px;overflow:auto;max-height:78vh}
+dialog .close{position:sticky;bottom:0;display:flex;justify-content:flex-end;padding:8px 12px;background:var(--tile2);border-top:1px solid var(--line)}
+.toast{position:fixed;left:12px;right:12px;bottom:calc(72px + var(--safe-b));background:var(--toast);border:1px solid var(--lcd);padding:10px 12px;border-radius:10px;z-index:20;display:none}
+.disc{border-left:3px solid var(--warn);padding:6px 10px;background:var(--disc);font-size:13px;border-radius:0 8px 8px 0}
+/* report document (light, printable) */
+#reportDoc{background:#fff;color:#111;border-radius:10px;padding:18px;margin-top:12px;font-size:13.5px}
+#reportDoc h1{font-size:20px;color:#111} #reportDoc h2{font-size:15px;margin:16px 0 6px;color:#111;border-bottom:1px solid #ccc;padding-bottom:3px}
+#reportDoc table th,#reportDoc table td{border-bottom:1px solid #ddd;color:#111} #reportDoc th{color:#444}
+#reportDoc img.chartimg{width:100%;max-width:700px}
+#reportDoc .photos img{width:150px;height:110px}
+#reportDoc .badge.pass{background:#d9f2e1;color:#14693a} #reportDoc .badge.fail{background:#fbdcd9;color:#a1271d} #reportDoc .badge.na{background:#eee;color:#555} #reportDoc .badge.warn{background:#fdf0cf;color:#7a5200}
+#reportDoc .disc{background:#fff7e0;color:#333}
+
+.tile{background:transparent;border:0;border-radius:12px;margin-bottom:10px;overflow:visible}
+.tile>header{display:none}
+body.arr .tile{background:var(--tile);border:1px dashed var(--lcd);overflow:hidden;padding:0 8px 8px}
+body.arr .tile>header{display:flex}
+.tile>.body{position:relative;padding:4px 0}
+.ib{position:absolute;top:0;right:0;min-height:32px;min-width:32px;padding:2px 8px;border-radius:99px;z-index:2;background:transparent}
+.ib2{margin-left:auto;min-height:30px;min-width:30px;padding:0 8px;border-radius:99px;background:transparent}
+.gaugeWrap{display:block}
+svg.gauge{width:100%;height:auto;display:block;max-width:none}
+.readout{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:4px;margin-top:-50px;position:relative}
+.readout .side{display:flex;flex-direction:column;color:var(--dim);font-size:15px;padding-bottom:10px;font-variant-numeric:tabular-nums}
+.readout .side b{font-size:22px;color:var(--strong);font-weight:500}
+.readout .side.r{align-items:flex-end}
+.mainv{display:flex;flex-direction:column;align-items:center}
+.big{font-size:84px;color:var(--big);text-shadow:none;font-weight:500;letter-spacing:-1px}
+.unit{font-size:15px;color:var(--soft);order:-1;margin:0 0 -6px;white-space:nowrap}
+.pillbar{display:flex;align-items:center;gap:10px;background:var(--pill);border-radius:99px;padding:6px 8px 6px 14px;font-size:12px;min-height:40px}
+.pillbar .dot{width:11px;height:11px;border-radius:50%;background:#48a6d6;flex:0 0 auto}
+.led{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;height:12px}
+.led i{background:var(--c);border:0;border-radius:2px;opacity:.22}
+.led i.on{opacity:1;box-shadow:none;background:var(--c)}
+.led i.pk{outline:2px solid var(--strong)}
+#specCv{height:330px;background:var(--canvas);border-radius:8px}
+.domrow{display:flex;align-items:flex-start;gap:8px;margin-top:6px}
+#domList{flex:1;min-width:0;font-size:13px;line-height:20px;color:var(--strong);overflow:hidden;font-variant-numeric:tabular-nums}
+#domList div{white-space:nowrap;height:20px}
+#domList b{color:var(--lcd)}
+.ctrl{flex-wrap:wrap}
+.rb.lbl{flex:1 1 calc(50% - 6px)}
+.rb.lbl[aria-pressed="true"]{outline:2px solid var(--lcd);outline-offset:-2px}
+.timer{display:flex;justify-content:center;align-items:center;gap:8px;font-size:30px;font-variant-numeric:tabular-nums;margin:6px 0 10px}
+.rdot{width:12px;height:12px;border-radius:50%;background:#e5584f;display:inline-block}
+.ctrl{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:12px}
+.rb{width:58px;height:58px;border-radius:50%;padding:0;display:grid;place-items:center;background:var(--btn2);border:0;color:var(--strong)}
+.rb.main{width:80px;height:80px;background:#e5584f;color:#fff}
+.rb.main.idle{background:#2f9e63}
+.rb.lbl{width:auto;height:auto;flex:1;border-radius:14px;padding:12px 10px;display:flex;gap:8px;align-items:center;justify-content:center;font-size:15px}
+.ctrl{margin-top:8px}
+label.radio{display:flex;gap:10px;align-items:flex-start;padding:10px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;color:var(--text);font-size:15px}
+label.radio input{width:auto;min-height:0;margin-top:4px}
+label.radio small{color:var(--dim)}
+.req{color:#e5584f;font-weight:700}
+input.invalid,textarea.invalid,select.invalid{border-color:#e5584f}
+.row.aligned{align-items:center;gap:10px;flex-wrap:nowrap}
+.row.aligned .inl{color:var(--dim);font-size:13px}
+.row.aligned select{width:auto;flex:0 0 92px;min-height:44px}
+.row.aligned button{flex:1;min-height:44px}
+.rst{width:34px;height:34px;min-height:34px;border-radius:50%;padding:0;display:grid;place-items:center;background:var(--btn2);border:0;color:var(--strong);margin-bottom:4px}
+.pillbar #refText{flex:1;min-width:0;white-space:nowrap;overflow:hidden;font-size:12px}
+.ctrl{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+svg.gauge{color:var(--strong)}
+#f0Line{font-size:13px;line-height:20px;height:20px;white-space:nowrap;overflow:hidden;margin-top:2px;color:var(--f0);font-weight:600}
+:root{--f0:#e879f9} :root[data-theme="light"]{--f0:#a21caf}
+input[type=range]{padding:0;min-height:30px}
+.fcf{min-height:36px;padding:2px 4px;font-size:12px}
+.fcf.on{background:var(--lcd);color:var(--on-lcd);border-color:var(--lcd)}
+#pkLine{font-size:13px;line-height:20px;height:20px;white-space:nowrap;overflow:hidden;margin-top:2px;color:var(--lcd);font-weight:600}
+.chk{display:flex;gap:8px;align-items:center;color:var(--text);font-size:14px}
+.chk input{width:auto;min-height:0}
+details.adv summary{cursor:pointer;font-weight:600;padding:8px 0;color:var(--lcd)}
+.fcgrid{display:grid;grid-template-columns:50px 54px 1fr auto 1fr;gap:6px;align-items:center;margin-bottom:4px;font-size:13px}
+.fcgrid input{min-height:36px;padding:4px 6px}
+.fcgrid button{min-height:36px;padding:2px 8px}
+.fcgrid.h{color:var(--dim);font-size:11.5px}
+.rb.lbl{flex-direction:column;gap:5px;padding:10px 4px;font-size:10.5px;line-height:1.2;text-align:center;min-height:64px}
+#arrBanner{display:none;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+body.arr #arrBanner{display:flex}
+.brand{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.build{font-size:10.5px;color:var(--dim);letter-spacing:.2px}
+#fbLine{font-size:13px;line-height:20px;height:20px;white-space:nowrap;overflow:hidden;margin-top:2px}
+.fb-ok{color:var(--dim)} .fb-warn{color:var(--warn);font-weight:600} .fb-bad{color:var(--bad);font-weight:700}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.seg button{font-size:13px;padding:8px 4px}
+ol.eq{padding-left:20px;margin:8px 0} ol.eq li{margin-bottom:10px;font-size:14px;line-height:1.45}
+.seg button.on{background:var(--lcd);color:var(--on-lcd);border-color:var(--lcd);font-weight:600}
+.gcard .body p{margin:6px 0;font-size:14px}
+a.glink{display:inline-block;margin-top:4px;color:var(--trace);word-break:break-all}
+dl.gl dt{font-weight:700;margin-top:10px;color:var(--text)} dl.gl dd{margin:2px 0 0;color:var(--soft);font-size:14px}
+#tiles{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-auto-rows:30px;gap:8px;position:relative}
+#tiles>.tile{margin:0;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;position:relative;padding:0}
+#tiles>.tile>.body{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:0;overflow:hidden}
+#t-info>.body,#t-ctrl>.body{justify-content:flex-start;overflow:auto}
+#t-ctrl>.body{justify-content:center}
+#t-gauge{container-type:inline-size}
+#t-gauge .big{font-size:clamp(40px,15cqw,92px)}
+#tiles canvas.chart{flex:1;min-height:0;width:100%;height:100%;border-radius:8px;background:var(--canvas)}
+.grip{font-size:12px;color:var(--dim)}
+.ctrl{grid-template-columns:repeat(auto-fit,minmax(70px,1fr))}
+body.arr #tiles>.tile{background:var(--tile);border:1px dashed var(--lcd)}
+body.arr #tiles>.tile>.body{padding:6px}
+.rz{display:none}
+body.arr .rz{display:block;position:absolute;right:0;bottom:0;width:34px;height:34px;touch-action:none;cursor:nwse-resize;background:linear-gradient(135deg,transparent 58%,var(--lcd) 58%);border-bottom-right-radius:12px;z-index:3}
+body.arr #tiles>.tile>header{touch-action:none;cursor:grab;user-select:none}
+#tiles>.tile.dragging{z-index:20;box-shadow:0 10px 30px rgba(0,0,0,.45);opacity:.94}
+#ph{display:none;border:2px dashed var(--lcd);border-radius:12px;background:rgba(242,169,59,.14);z-index:0}
+body.arr #ph.on{display:block}
+#arrBanner .row{flex-wrap:nowrap}
+@media (orientation:landscape) and (min-width:640px){
+ body{display:grid;grid-template-columns:86px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"nav head" "nav main"}
+ header.top{grid-area:head} main{grid-area:main} nav.tabs{grid-area:nav;display:flex;flex-direction:column;border-top:0;border-right:1px solid var(--line)}
+ nav.tabs button{flex:1;min-height:0;padding:4px 2px} nav.tabs button.on{box-shadow:inset 3px 0 0 var(--lcd)}
+ .tab{max-width:1100px} #tab-live{max-width:none}
+ .toast{left:98px}
+}
+.card.collapsible>header{cursor:pointer;user-select:none}
+.card.collapsible>header::after{content:'\25BE';color:var(--dim);font-size:16px;margin-left:8px}
+.card.collapsible.collapsed>header::after{content:'\25B8'}
+.card.collapsible.collapsed>header{border-bottom:0}
+.card.collapsed>.body{display:none}
+.ctrl button{-webkit-touch-callout:none;user-select:none}
+#dlgBody .chelp{padding:8px 0;border-bottom:1px solid var(--line)} #dlgBody .chelp.sel{background:var(--b-warn);margin:0 -8px;padding:8px}
+@media (max-width:520px){.big{font-size:56px}.bar{grid-template-columns:1fr 1fr}.bar button{grid-column:1/-1}}
+@media print{
+  html,body{height:auto;overflow:visible;display:block}
+  body{background:#fff;padding:0}
+  main{overflow:visible}
+  header.top,nav.tabs,.toast{display:none!important}
+  .tab{display:none!important} #tab-report{display:block!important}
+  #tab-report .noprint{display:none!important}
+  #reportDoc{margin:0;padding:0;border-radius:0}
+  main{max-width:none;padding:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Acoustics Meter</h1>
+  <span class="pill" id="micPill">Mic off</span>
+  <button class="primary" id="btnMic">Start</button>
+</header>
+
+<main>
+<!-- ============ LIVE ============ -->
+<section id="tab-live" class="tab active">
+  <div id="arrBanner" class="disc"><span>Arranging tiles: drag a tile by its title bar and resize it from the corner.</span><span class="row"><button id="btnLayoutReset">Reset layout</button><button id="btnArrDone" class="primary">Done</button></span></div>
+  <div id="calBanner" class="disc" style="margin-bottom:10px">Uncalibrated: readings are relative guesses until you calibrate on the Setup tab.</div>
+  <div id="tiles">
+    <article class="tile" id="t-mic" data-id="mic"><header><h2>Microphone</h2><span class="grip">drag</span></header><div class="body "><label>Microphone<select id="selMicLive"></select></label></div><span class="rz" aria-hidden="true"></span></article>
+    <article class="tile" id="t-gauge" data-id="gauge"><header><h2>SPL meter</h2><span class="grip">drag</span></header><div class="body gaugeWrap">
+        <svg class="gauge" id="gauge" viewBox="0 0 360 150" role="img" aria-label="SPL gauge"></svg>
+        <div class="readout">
+          <div class="side"><span class="k">AVG</span><b id="av">--</b></div>
+          <div class="mainv"><span class="big" id="big">--</span><span class="unit" id="unitLbl">dB-A</span></div>
+          <div class="side r"><button class="rst" id="btnResetMax" aria-label="Reset max and average levels"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v4h4"/></svg></button><span class="k">MAX</span><b id="mx">--</b></div>
+        </div>
+      </div><span class="rz" aria-hidden="true"></span></article>
+    <article class="tile" id="t-ref" data-id="ref"><header><h2>What this sounds like</h2><span class="grip">drag</span></header><div class="body "><div class="pillbar"><i class="dot" id="refDot"></i><span id="refText">Start the mic to measure.</span><button class="ib2" data-info="spl" aria-label="SPL reference table">i</button></div></div><span class="rz" aria-hidden="true"></span></article>
+    <article class="tile" id="t-led" data-id="led"><header><h2>Level bar</h2><span class="grip">drag</span></header><div class="body "><div class="led" id="led"></div></div><span class="rz" aria-hidden="true"></span></article>
+    <article class="tile" id="t-spec" data-id="spec"><header><h2>Spectrum</h2><span class="grip">drag</span></header><div class="body "><canvas class="chart" id="specCv"></canvas></div><span class="rz" aria-hidden="true"></span></article>
+    <article class="tile" id="t-wf" data-id="wf"><header><h2>Waterfall</h2><span class="grip">drag</span></header><div class="body "><canvas class="chart" id="wfCv"></canvas></div><span class="rz" aria-hidden="true"></span></article>
+    <article class="tile" id="t-info" data-id="info"><header><h2>Readouts</h2><span class="grip">drag</span></header><div class="body "><div class="domrow"><div id="domList" class="dom"></div></div>
+<div id="fbLine"></div>
+<div id="pkLine"></div>
+<div id="f0Line"></div>
+<div class="note" id="specRead"></div></div><span class="rz" aria-hidden="true"></span></article>
+    <article class="tile" id="t-ctrl" data-id="ctrl"><header><h2>Controls</h2><span class="grip">drag</span></header><div class="body "><div class="ctrl">
+    <button class="rb lbl" id="btnMode" aria-label="Switch spectrum style: line or 1/3-octave bars"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M8 5v14M12 8v8M16 4v16M20 9v6"/></svg><span>Spectrum style</span></button>
+    <button class="rb lbl" id="btnCursor" aria-pressed="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v18"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></svg><span>Touch cursor</span></button>
+    <button class="rb lbl" id="btnBands" aria-pressed="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="4" height="14"/><rect x="9" y="5" width="6" height="14"/><rect x="17" y="5" width="4" height="14"/></svg><span>Frequency bands</span></button>
+    <button class="rb lbl" id="btnTones" aria-pressed="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l5-9 4 6 3-4 6 7"/><circle cx="12" cy="15" r="2" fill="currentColor"/></svg><span>Dominant tones</span></button>
+    <button class="rb lbl" id="btnPk" aria-pressed="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19L9 7l4 8 3-5 5 9"/><path d="M5 4h14" stroke-dasharray="2 3"/></svg><span>Peak levels</span></button>
+    <button class="rb lbl" id="btnF0" aria-pressed="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 20V6M12 20V11M18 20V15"/><path d="M4 20h16"/></svg><span>Fundamentals</span></button>
+    <button class="rb lbl" id="btnFb" aria-pressed="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h3l2-6 3 12 2-8 2 4h4"/></svg><span>Feedback detect</span></button>
+    <button class="rb lbl" id="btnWf" aria-pressed="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h16M4 9h12M4 13h14M4 17h8M4 21h10"/></svg><span>Waterfall</span></button>
+    <button class="rb lbl" id="btnCtrlHelp" aria-label="Details of each control button"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1.1.9-1.1 1.7"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg><span>Button help</span></button>
+  </div></div><span class="rz" aria-hidden="true"></span></article>
+    <div id="ph"></div>
+  </div>
+</section>
+
+<!-- ============ IMPULSE ============ -->
+<section id="tab-ir" class="tab">
+  <div class="card">
+    <header><h2>1 Choose the target</h2><span class="tools"><button data-info="ir" aria-label="Measurement guidance">i</button></span></header>
+    <div class="body">
+      <label>Compare results against
+        <select id="selPreset"></select></label>
+      <div id="customBox" style="display:none;margin-top:8px">
+        <label>Space type (as named in Table 1)<input id="cName" placeholder="e.g. Boardroom and conference rooms"></label>
+        <div class="grid2" style="margin-top:8px">
+          <label>Noise lower dB(A)<input id="cNzMin" type="number" step="1" inputmode="decimal"></label>
+          <label>Noise upper dB(A)<input id="cNzMax" type="number" step="1" inputmode="decimal"></label>
+          <label>RT60 lower (s)<input id="cRtMin" type="number" step="0.1" inputmode="decimal"></label>
+          <label>RT60 upper (s)<input id="cRtMax" type="number" step="0.1" inputmode="decimal"></label>
+        </div>
+        <label style="margin-top:8px">Standard / table reference<input id="cRef" placeholder="e.g. AS/NZS 2107:2016, Table 1"></label>
+        <div class="row" style="margin-top:8px"><button id="btnSaveTgt">Save row to my list</button></div>
+        <p class="note">Enter a row from Table 1 of your copy of AS/NZS 2107:2016, then save it. It is kept on this phone and appears in the list above.</p>
+      </div>
+      <div class="row" style="margin-top:8px"><button id="btnDelTgt" style="display:none">Delete this saved row</button><button data-info="std">About the AS/NZS 2107 ranges</button></div>
+      <p class="note" id="presetNote"></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <header><h2>2 Measure background noise</h2></header>
+    <div class="body">
+      <p class="note">Leave the building services in the state you want to assess. Stay quiet and still for the whole test.</p>
+      <div class="row aligned"><span class="inl">Duration</span><select id="selDur" aria-label="Test duration"><option value="15">15 s</option><option value="30" selected>30 s</option><option value="60">60 s</option></select><button class="primary" id="btnNoise">Start noise test</button></div>
+      <div class="prog" style="margin:10px 0"><div id="noiseProg"></div></div>
+      <div id="noiseOut" class="note">No noise test yet.</div>
+      <canvas class="chart" id="noiseCv" style="margin-top:8px;display:none"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <header><h2>3 Capture an impulse</h2><span class="tools"><button data-info="rt" aria-label="Typical RT60 and noise values">i</button></span></header>
+    <div class="body">
+      <p class="note">Press Arm, wait for “Listening”, then pop a balloon or clap sharply about 2 m from the phone. Then stay silent for 5 s. Repeat at several positions; results are averaged.</p>
+      <div class="row"><button class="primary" id="btnArm">Arm</button><button id="btnIrClear">Clear captures</button><span class="badge na" id="irState">Idle</span></div>
+      <div id="irList" class="note" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <header><h2>4 Results</h2></header>
+    <div class="body">
+      <div id="irSummary" class="note">Capture at least one impulse.</div>
+      <p class="note">Impulse response: shaded curve is the energy-time curve of the last capture, lines are the decay curves (one per capture).</p>
+      <canvas class="chart" id="irTimeCv" style="margin-top:4px"></canvas>
+      <canvas class="chart" id="irCv" style="margin-top:8px"></canvas>
+      <table style="margin-top:8px"><thead><tr><th>Octave band</th><th>T20 (s)</th><th>EDT (s)</th><th>Range (dB)</th><th></th></tr></thead><tbody id="irTbl"></tbody></table>
+      <p class="note">T20 is fitted from −5 to −25 dB of the decay and extrapolated to 60 dB. EDT uses the first 10 dB. Range is the gap between the impulse and the noise floor in that band. Octave bands from 125 Hz to 4 kHz are the usual reporting set for room reverberation, as ISO 3382-2 style measurements use. 63 Hz is left out because phone microphones are weak there. 8 kHz is shown for information.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ REPORT ============ -->
+<section id="tab-report" class="tab">
+  <div class="card noprint">
+    <header><h2>Report details</h2></header>
+    <div class="body" id="repForm">
+      <p class="note"><span class="req">*</span> Required for the report.</p>
+      <div class="grid2">
+        <label>Operator <span class="req" aria-hidden="true">*</span><input id="fOp" autocomplete="name" aria-required="true"></label>
+        <label>Site name <span class="req" aria-hidden="true">*</span><input id="fSite" aria-required="true"></label>
+      </div>
+      <label style="margin-top:8px">Site address <span class="req" aria-hidden="true">*</span><textarea id="fAddr" aria-required="true"></textarea></label>
+      <div class="row" style="margin:6px 0"><button id="btnGps">Use GPS for address</button><span class="note" id="gpsNote"></span></div>
+      <label>Room / area measured<input id="fRoom" placeholder="e.g. Meeting room 2, level 3"></label>
+      <label style="margin-top:8px">Room state during measurement
+        <select id="fState"><option value="">Not stated</option><option>Unoccupied, building services operating normally</option><option>Unoccupied, building services off</option><option>Occupied</option></select></label>
+      <label style="margin-top:8px">Device Make and Model <span class="req" aria-hidden="true">*</span><input id="fDev" placeholder="e.g. Samsung Galaxy S24 (SM-S921B)" aria-required="true"></label>
+      <div class="note" id="devNote"></div>
+      <div class="row" style="margin-top:6px"><button id="btnDetect">Detect from this device</button><button id="btnPasteDev">Paste product name</button></div>
+      <p class="note">Your phone's own name is under Settings, About phone, Product name (or Model name). Copy it, come back and press Paste product name. A web page cannot read the Settings screen itself, so the app can only detect the model code automatically. A pasted or typed name is remembered and not cleared.</p>
+      <label style="margin-top:8px">Microphone used<input id="fMic"></label>
+      <label style="margin-top:8px">Notes (e.g. air-conditioning state, room occupancy)<textarea id="fNotes"></textarea></label>
+      <h3>Photos</h3>
+      <div class="row"><label style="flex:1;min-width:140px">Take a photo<input id="fCam" type="file" accept="image/*" capture="environment"></label>
+      <label style="flex:1;min-width:140px">Choose from gallery<input id="fGal" type="file" accept="image/*" multiple></label></div>
+      <div class="photos" id="photoList" style="margin-top:8px"></div>
+      <div class="row" style="margin-top:14px"><button class="primary" id="btnConfirm">Confirm details and build report</button><span class="badge na" id="confState">Not confirmed</span></div>
+      <label class="chk" style="margin-top:12px"><input type="checkbox" id="fIncAudio" checked> Include audio recordings of the tests (attached to the PDF)</label>
+      <div class="row" style="margin-top:8px"><button class="primary" id="btnSharePdf" disabled>Share PDF (attached)</button><button id="btnPdf" disabled>Download PDF</button></div>
+      <div class="row" style="margin-top:8px"><button id="btnShare" disabled>Share text summary</button><button id="btnPrint" disabled>Print</button><button id="btnClear">Clear all fields</button></div>
+      <p class="note">Share PDF opens your phone's share sheet (email, Drive, WhatsApp and so on) with the PDF attached. Download PDF saves a copy to your Downloads folder. Editing any field requires you to confirm again.</p>
+    </div>
+  </div>
+  <div id="reportDoc"><p class="note" style="color:#555">The report appears here after you confirm the details.</p></div>
+</section>
+
+<!-- ============ SETUP ============ -->
+<section id="tab-gloss" class="tab">
+  <div class="seg"><button id="gsStd" class="on">Standards</button><button id="gsTerm">Terms</button><button id="gsEq">Room EQ guide</button></div>
+  <div id="glStd"></div>
+
+  <div id="glEq" style="display:none" class="card gcard"><header><h2>How to EQ a room, step by step</h2></header><div class="body">
+   <p>Equalisation (EQ) trims a system's frequency response so the room and speakers sound more even. It can reduce peaks and ringing, but it cannot fix dips caused by cancellation, or a room that is too reverberant. Keep the volume low while setting up and protect your hearing.</p>
+   <ol class="eq">
+    <li><b>Prepare the room and system.</b> Put the speakers where they will be used, furnish the room as normal, close doors and switch off fans and other noise you can control. Set every EQ on the system to flat (0 dB) and turn off any automatic room correction while you measure.</li>
+    <li><b>Prepare the microphone.</b> Use the best microphone you have. On the Setup tab do the general calibration, and if you have a reference meter or a calibration file, use the advanced frequency calibration. Mount the phone still at ear height at the main listening position (about 1.2 m for seated listeners), away from walls and furniture, pointing at the speakers.</li>
+    <li><b>Choose the test signal.</b> Play pink noise (equal energy in every octave) through the system. The Tone generator on the Setup tab can make it, or use a pink noise track. Set a level that is clearly measurable, about 75 to 85 dB(A) at the listening position and at least 15 dB above the room's background noise. If the Live page warns of clipping, turn the level down.</li>
+    <li><b>Set up the analyser.</b> On the Setup tab set Frequency weighting to None (flat) and Time weighting to Slow. On the Live page choose the bar style (1/3-octave) and switch on Peak levels to see the highest level reached at each frequency. A flat system measured with pink noise shows bars of about the same height.</li>
+    <li><b>Read the response.</b> Let the bars settle for 10 to 20 seconds. Note narrow peaks (more than about 4 to 6 dB above their neighbours), broad bumps and dips, and the overall slope from bass to treble. Many people like a gentle fall in level toward the highest frequencies. Pick a target shape and stay with it.</li>
+    <li><b>Check more than one position.</b> Repeat at several seats and compare. EQ should fix problems that show up at most positions. A dip seen at only one position is usually cancellation, so try moving the speaker or listener instead of boosting it.</li>
+    <li><b>Find the exact frequencies.</b> Turn on Dominant tones, or use Touch cursor, to read the frequency and level of each peak. Booms and ringing below about 300 Hz are often room modes. If microphones are in use, turn on Feedback detect and raise the gain slowly until the system just starts to ring. The frequencies marked FB are the first to cut.</li>
+    <li><b>Decide what to cut.</b> Cut peaks and do not boost dips: boosting wastes amplifier headroom and cannot fix cancellation. Use a narrow cut (high Q, about 5 to 10) for a narrow peak and a wide cut (low Q, about 1 to 2) or a shelf for a broad bump. Start with about half the height of the peak (3 dB for a 6 dB peak) and rarely cut more than 6 to 9 dB at one frequency.</li>
+    <li><b>Change one thing at a time.</b> On the system's graphic or parametric EQ, set a filter at the frequency you found, reduce its gain and watch the graph. Press the reset icon above MAX so the peak levels start fresh after each change. Stop when the peaks sit within about 3 dB of your target.</li>
+    <li><b>Check the room itself.</b> EQ changes the response, not the reverberation. Use the Impulse tab to measure reverberation time and background noise against your target (for example AS/NZS 2107). If the reverberation time is too long, add absorption. EQ will not fix it.</li>
+    <li><b>Listen and confirm.</b> Play speech and music you know well at normal levels. If it sounds thin or harsh you have probably cut too much, so back off a little. Write down the final settings.</li>
+    <li><b>Record the result.</b> Fill in the Report tab and share the PDF, noting the room state and the EQ settings in the notes. Check again after changes to furniture, audience size or equipment, because a full room absorbs more than an empty one.</li>
+   </ol>
+   <p class="note">A phone microphone is weak below about 50 Hz and can be uneven at high frequencies, so treat these measurements as a guide. For critical work use a calibrated measurement microphone with the advanced frequency calibration. The numbers in these steps (levels, Q values, cut sizes) are common practice, not requirements of a standard.</p>
+  </div></div>
+  <div id="glTerm" style="display:none"><input id="glSearch" type="search" placeholder="Search terms" aria-label="Search terms" style="margin-bottom:6px"><dl class="gl" id="glTermList"></dl></div>
+</section>
+
+<section id="tab-setup" class="tab">
+  <div class="card">
+    <header><h2>Appearance</h2></header>
+    <div class="body"><label>Theme
+      <select id="selTheme"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Match phone setting</option></select></label></div>
+  </div>
+  <div class="card">
+    <header><h2>Measurement settings</h2></header>
+    <div class="body">
+      <div class="grid2">
+        <label>Frequency weighting
+          <select id="selW"><option value="A">dB(A) default</option><option value="C">dB(C)</option><option value="Z">None (flat, no weighting)</option></select>
+        </label>
+        <label>Time weighting
+          <select id="selT"><option value="F" selected>Fast (125 ms)</option><option value="M">Medium (500 ms)</option><option value="S">Slow (1 s)</option></select>
+        </label>
+      </div>
+      <label style="margin-top:8px">Spectrum resolution<select id="selRes"><option value="1">Octave (1/1)</option><option value="3">1/3 octave</option><option value="6">1/6 octave</option><option value="12" selected>1/12 octave</option><option value="24">1/24 octave</option><option value="48">1/48 octave</option><option value="fft">Narrowband (FFT, about 6 Hz)</option></select></label>
+      <p class="note">Spectrum resolution is how finely the Live graph, peaks and waterfall divide the frequency range. Narrower bands show more detail and read lower for broad noise, while steady tones read the same.</p>
+      <label style="margin-top:8px">Display response<select id="selResp"><option value="2048">Fast (about 45 ms delay)</option><option value="4096" selected>Balanced (about 90 ms)</option><option value="8192">Detailed (about 170 ms)</option></select></label>
+      <p class="note">Display response is how much sound the spectrum looks at each time. Fast shows changes sooner but has less detail at low frequencies, and tone, fundamental and feedback detection then start from about 150 Hz. Detailed shows the most low-frequency detail. Times assume a 48 kHz microphone.</p>
+      <p class="note">These apply to the Live page. The Impulse and Report results always use dB(A) for background noise.</p>
+      <div class="row" style="margin-top:8px"><button id="btnArr">Arrange Live tiles</button><button id="btnLayoutReset2">Reset Live layout</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <header><h2>Microphone</h2></header>
+    <div class="body">
+      <label>Input device<select id="selMic"></select></label>
+      <dl class="kv" style="margin-top:10px">
+        <dt>Selected</dt><dd id="micLabel">None</dd>
+        <dt>Type guess</dt><dd id="micKind">-</dd>
+        <dt>Raw capture</dt><dd id="micRaw">-</dd>
+        <dt>Sample rate</dt><dd id="micFs">-</dd>
+      </dl>
+      <div class="row" style="margin-top:10px"><button id="btnRefreshMics">Rescan devices</button></div>
+      <p class="note">Plug in a USB mic, or connect Bluetooth, then rescan. Chrome on Android usually lists a single built-in microphone, so choosing the top or bottom capsule may not be possible from a web page. Bluetooth mics are normally voice-processed and not suitable for measurement. The type is guessed from the device name only.</p>
+    </div>
+  </div>
+  <div class="card">
+    <header><h2>Calibration</h2></header>
+    <div class="body">
+      <p class="note">Best: place an acoustic calibrator (1 kHz, usually 94 dB) on the mic, wait 5 seconds, then press Calibrate. Without one, compare against a trusted meter in steady noise and adjust the offset. The frequency and time weighting settings do not matter here: calibration uses the flat (unweighted) level, and A, C and flat weighting are all 0 dB at 1 kHz anyway. If your calibrator is not at 1 kHz, enter its unweighted level.</p>
+      <div class="grid2">
+        <label>Reference level (dB)<input id="calRef" type="number" value="94" inputmode="decimal"></label>
+        <label>Offset (dB)<input id="calOff" type="number" step="0.1" inputmode="decimal"></label>
+      </div>
+      <div class="row" style="margin-top:8px"><button class="primary" id="btnCal">Calibrate to reference</button><span class="badge warn" id="calState">Uncalibrated</span></div>
+      <p class="note">Calibration is stored for this microphone on this browser. Phone microphones typically bottom out around 30 to 35 dB(A) from their own noise, and distort above roughly 115 to 120 dB.</p>
+      <details class="adv" id="advCal"><summary>Advanced: frequency calibration</summary>
+        <p class="note">The general calibration above sets one offset for the whole microphone and is all most users need. Use this only if you can check the microphone against a reference meter or have a calibration file for it. Corrections are relative to 1 kHz, apply to the meter, spectrum, noise test and recordings, are saved per microphone, and add about 20 ms of delay while on.</p>
+        <label class="chk"><input type="checkbox" id="fcOn"> Use frequency correction for this microphone</label>
+        <p class="note" id="fcNote"></p>
+        <div id="fcRows"></div>
+        <p class="note">To set a frequency: play a steady tone at that frequency from a speaker at a fixed spot, read its level on a reference meter, type that in Reference dB and press Set. Use a tone at least 20 dB above the room noise. The 1 kHz row adjusts the general offset instead.</p>
+        <label>Import a calibration file (text or CSV lines of Hz, dB)<input type="file" id="fcFile" accept=".csv,.txt,.cal,text/plain"></label>
+        <label class="chk" style="margin-top:6px"><input type="checkbox" id="fcInv" checked> The file lists the microphone's response (the app inverts it)</label>
+        <div class="row" style="margin-top:8px"><button id="fcReset">Clear all corrections</button></div>
+      </details>
+    </div>
+  </div>
+  <div class="card">
+    <header><h2>Tone generator</h2></header>
+    <div class="body">
+      <p class="note">Plays a steady tone or pink noise for calibration and room EQ. Start with the phone volume low, because a tone is much louder than it sounds. To calibrate, play it from a speaker (this phone's, or another phone or tablet running this app) and compare your microphone with a reference meter in the same spot. Feedback detect may flag the tone, which is expected.</p>
+      <div class="grid2"><label>Signal<select id="genMode"><option value="sine">Sine tone</option><option value="pink">Pink noise</option></select></label>
+      <label>Frequency (Hz)<input id="genF" type="number" min="20" max="20000" value="1000" inputmode="decimal" list="genFl"><datalist id="genFl"><option value="31.5"><option value="63"><option value="125"><option value="250"><option value="500"><option value="1000"><option value="2000"><option value="4000"><option value="8000"><option value="16000"></datalist></label></div>
+      <label style="margin-top:8px">Output level <b id="genLvlTxt"></b><input id="genLvl" type="range" min="0" max="100" value="50"></label>
+      <label style="margin-top:8px">Stop automatically after<select id="genStop"><option value="30">30 seconds</option><option value="60" selected>1 minute</option><option value="300">5 minutes</option><option value="0">Never</option></select></label>
+      <div class="row" style="margin-top:10px"><button class="primary" id="genBtn">Start tone</button><span class="note" id="genStatus"></span></div>
+    </div>
+  </div>
+  <div class="card">
+    <header><h2>About this version</h2></header>
+    <div class="body note">
+      <p style="font-size:15px;color:var(--text)"><b id="buildNo"></b></p>
+      <p id="appStatus" style="font-size:13px"></p>
+      <div class="row" style="margin-bottom:8px"><button class="primary" id="btnInstall" style="display:none">Install as an app</button></div>
+      <p>Prototype. Uses the Web Audio API in Chrome. A and C weighting are digital filters (bilinear transform, matched at 1 kHz) so accuracy above about 10 kHz is approximate. This is not a Class 1 or Class 2 sound level meter (IEC 61672).</p>
+      <p><b>Revision log</b><br>Build 20261027-2: Setup sections collapse and expand, button help, readouts info icon and online lookup button removed.<br>Build 20261027-1: faster, more real-time display (selectable analysis window, lighter audio processing), build numbering corrected to YYYYMMDD-#.<br>Earlier builds (labelled 20261023-1 to 20261023-8 before the numbering was corrected): grid layout and landscape, installable app, tone generator, spectrum resolution, peak hold, fundamentals, themes, calibration, recordings and assumptions in the report.</p>
+      <p>Needs microphone permission. If Chrome refuses on a downloaded file, open it from an https address or http://localhost instead.</p>
+    </div>
+  </div>
+</section>
+</main>
+
+<nav class="tabs" aria-label="Sections">
+  <button class="on" data-tab="live">Live</button>
+  <button data-tab="ir">Impulse</button>
+  <button data-tab="report">Report</button>
+  <button data-tab="gloss">Glossary</button>
+  <button data-tab="setup">Setup</button>
+</nav>
+
+<dialog id="micDlg"><div class="in"><h2>Which microphone?</h2><p class="note">More than one audio input was found, so an external microphone may be connected. Choose the one to measure with. The test starts as soon as you confirm.</p><div id="micList"></div></div><div class="close"><button id="micCancel">Cancel</button><button class="primary" id="micOk">Use this microphone and start</button></div></dialog>
+<dialog id="dlg"><div class="in" id="dlgBody"></div><div class="close"><button id="dlgClose">Close</button></div></dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',3800)}
+
+const BUILD='20261027-2';$('#buildNo').textContent='Build '+BUILD;
+/* ---------- constants ---------- */
+const TH3=[20,25,31.5,40,50,63,80,100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000,6300,8000,10000,12500,16000,20000];
+const OCT_IR=[125,250,500,1000,2000,4000,8000];
+function wA(f){const f2=f*f;return 20*Math.log10((12194**2*f2*f2)/((f2+20.6**2)*Math.sqrt((f2+107.7**2)*(f2+737.9**2))*(f2+12194**2)))+2.0}
+function wC(f){const f2=f*f;return 20*Math.log10((12194**2*f2)/((f2+20.6**2)*(f2+12194**2)))+0.06}
+const Wdb=(f,w)=>w==='A'?wA(f):w==='C'?wC(f):0;
+const REFS=[
+ [20,'Near silence, quiet recording studio'],[30,'Quiet bedroom, a whisper'],[40,'Library, quiet suburban night'],
+ [50,'Quiet office, light rain'],[60,'Normal conversation'],[70,'Busy open-plan office, vacuum cleaner'],
+ [80,'Heavy traffic, loud restaurant'],[90,'Lawn mower, motorcycle passing'],[100,'Power tools, nightclub'],
+ [110,'Live rock concert, chainsaw'],[120,'Thunderclap, ambulance siren up close'],[130,'Jet take-off nearby, pain threshold']];
+const PRESETS={
+ s1260a:{name:'ANSI/ASA S12.60 classroom under 283 m³ (10,000 ft³)',ref:'ANSI/ASA S12.60-2010/Part 1 (R2020)',rtMax:0.6,nzMax:35},
+ s1260b:{name:'ANSI/ASA S12.60 classroom 283 to 566 m³',ref:'ANSI/ASA S12.60-2010/Part 1 (R2020)',rtMax:0.7,nzMax:35},
+ s1260c:{name:'ANSI/ASA S12.60 core learning space over 566 m³',ref:'ANSI/ASA S12.60-2010/Part 1 (R2020)',rtMax:null,nzMax:40},
+ as_board:{name:'AS/NZS 2107:2016 Table 1: Boardroom and conference rooms',ref:'AS/NZS 2107:2016, Table 1',nzMin:30,nzMax:40,rtMin:0.6,rtMax:0.8},
+ as_video:{name:'AS/NZS 2107:2016 Table 1: Video/audio conference rooms',ref:'AS/NZS 2107:2016, Table 1',nzMin:30,nzMax:40,rtMin:0.2,rtMax:0.4}};
+
+/* ---------- state ---------- */
+const S={ctx:null,stream:null,src:null,fs:48000,cal:120,calibrated:false,weight:'A',tw:'F',devId:'',label:'',running:false,
+  msF:0,msS:0,max:-Infinity,sumE:0,sumT:0,lastT:0,shown:20,peakDb:-Infinity,frame:0,
+  band:new Float64Array(31),bandSm:new Float64Array(31),bandPk:new Float64Array(31).fill(0),clipUntil:0,wake:null,txt:0};
+const toDb=ms=>10*Math.log10(ms+1e-20)+S.cal;
+
+/* ---------- fit the app to the visible screen area ---------- */
+function fitApp(){const vv=window.visualViewport;if(vv&&vv.scale>1.02)return;document.body.style.height=((vv&&vv.height)||window.innerHeight)+'px';window.scrollTo(0,0)}
+fitApp();addEventListener('resize',fitApp);addEventListener('orientationchange',()=>setTimeout(fitApp,200));if(window.visualViewport)visualViewport.addEventListener('resize',fitApp);
+/* ---------- tabs, dialogs, tiles ---------- */
+$$('nav.tabs button').forEach(b=>b.onclick=()=>{$$('nav.tabs button').forEach(x=>x.classList.toggle('on',x===b));$$('.tab').forEach(t=>t.classList.toggle('active',t.id==='tab-'+b.dataset.tab));if(b.dataset.tab==='ir')renderIR();$('main').scrollTo(0,0)});
+const INFO={
+ spl:()=>`<div class="refSmall"><h2>Typical sound levels</h2><p class="note">Approximate A-weighted levels. Everyday examples vary with distance and conditions.</p><table><thead><tr><th>dB(A)</th><th>Typical source</th></tr></thead><tbody>${REFS.map(r=>`<tr><td>${r[0]}</td><td style="text-align:left">${r[1]}</td></tr>`).join('')}</tbody></table><p class="note" style="margin-top:8px">Hearing-damage risk rises with level and time. Australian workplace rules use an exposure standard of 85 dB(A) averaged over 8 hours (check current WHS regulations for details).</p></div>`,
+ ir:()=>`<h2>Preparing for an impulse test</h2><ul>
+ <li>Room unoccupied and furnished as normally used. Close doors and windows.</li>
+ <li>For reverberation, turn fans and air-conditioning off so they do not mask the decay. For background noise, run services as you want them assessed. AS/NZS 2107:2016 includes a section on operating conditions during measurement, so record which state you used.</li>
+ <li>Hold or mount the phone still, around 1.2 to 1.5 m high and at least 1 m from walls and large reflective surfaces. A tripod or stand is best.</li>
+ <li>Make the impulse at least 1.5 to 2 m from the phone, at about head height. A balloon pop or starter pistol has more low-frequency energy than a hand clap.</li>
+ <li>Keep everyone silent for 5 seconds after the pop. Do not stand next to the mic.</li>
+ <li>Avoid clipping. If the app warns of clipping, move the source further away.</li>
+ <li>Capture at several source and microphone positions and average the results.</li>
+ <li>Check the Range column: about 35 dB or more is needed for a reliable T20.</li></ul>
+ <p class="note">This is general practice guidance in the spirit of ISO 3382-2. Check the standard for the position counts and conditions required for formal work.</p>`,
+ bands:()=>`<h2>Bands, tones and feedback</h2><table><thead><tr><th>Band</th><th>Range</th></tr></thead><tbody>
+ <tr><td>Sub-Bass</td><td>20 to 60 Hz</td></tr><tr><td>Bass</td><td>60 to 250 Hz</td></tr><tr><td>Low-Mids</td><td>250 to 500 Hz</td></tr>
+ <tr><td>Midrange</td><td>500 Hz to 2 kHz</td></tr><tr><td>Upper-Mids / Presence</td><td>2 to 6 kHz</td></tr><tr><td>Brilliance / Air</td><td>6 to 20 kHz</td></tr></tbody></table>
+ <ul style="margin-top:10px"><li><b>Sub-Bass:</b> frequencies often felt more than heard, such as deep synth drops and heavy kick impacts.</li>
+ <li><b>Bass:</b> the foundational weight and punch of the rhythm section, including bass guitars and lower drum shells.</li>
+ <li><b>Low-Mids:</b> the body and warmth of most instruments. Excess here can sound muddy or boxy.</li>
+ <li><b>Midrange:</b> the core space where most melodic instruments and lead vocals sit.</li>
+ <li><b>Upper-Mids / Presence:</b> vocal clarity, attack transients, and the edge on guitars and snares.</li>
+ <li><b>Brilliance / Air:</b> high-frequency harmonics, cymbal sparkle, and the sense of space.</li></ul>
+ <h3>Fundamental frequency</h3><p class="note">When the peaks form a harmonic series (for example 220, 440, 660 and 880 Hz), the app marks the fundamental with an F0 label and puts small numbered ticks at its harmonics. It needs at least three clear harmonics, and can show two fundamentals at once.</p><h3>Feedback detection</h3><p class="note">The app watches for a narrow peak that stands at least 12 dB above the spectrum around it, stays on one frequency, and either keeps rising (amber, building) or holds steady for about 2 seconds without harmonics (red, likely feedback). Flagged frequencies are marked FB on the graph and listed under it. A steady pure tone from any source can look like feedback, so treat it as a prompt to listen, not proof. If it is feedback, a narrow cut at that frequency on the system's equaliser, or less gain, is the usual remedy.</p>
+ <p class="note">The number under each band name is the level of that whole band in the selected weighting. Dominant tones are the strongest steady peaks, about 10 dB above the spectrum around them and above roughly 28 dB. Pitch uses A4 = 440 Hz, and cents are hundredths of a semitone sharp (+) or flat (-). Peaks at very low or very high frequencies are limited by what a phone microphone can pick up.</p>`,
+ std:()=>`<h2>AS/NZS 2107:2016</h2><p class="note">How this app uses the Standard. Check your copy for the full requirements.</p><ul>
+ <li><b>Background sound level:</b> LAeq in dB(A), measured with the room unoccupied but ready for occupancy.</li>
+ <li><b>Design range:</b> Table 1 gives a lower and an upper level. Above the upper level most occupants become dissatisfied. Below the lower level there may be too little masking sound, which can reduce speech privacy and let intermittent noises distract.</li>
+ <li><b>Reverberation time:</b> compared as the average of the 500 Hz and 1 kHz octave band values. Some rise toward low frequencies is generally acceptable in large rooms, while small rooms suit a flat response.</li>
+ <li><b>Occupied or unoccupied:</b> the recommended reverberation times are for the occupied space, while the measurement method is for the unoccupied space, so record the room state in your report.</li>
+ <li><b>Low-frequency rumble:</b> plant noise with strong energy below about 200 Hz can annoy even when the dB(A) level is in range. Check the octave band chart.</li>
+ <li><b>Other parts:</b> Appendix A (reverberation times for selected spaces), Appendix C (octave band limits for studios, drama theatres and cinemas) and Appendix D (spectral imbalance and tonal components).</li>
+ <li><b>Not covered:</b> variable or transient noise such as traffic or aircraft, and occupancy noise.</li></ul>
+ <p class="note">Clause 6 of the Standard defines the formal measurement method. This app's short noise test and single-position impulse capture are screening checks only.</p>`,
+ rt:()=>`<h2>Typical reverberation and background noise</h2><p class="note">General guidance ranges for orientation only. They are not from one specific standard, so use the Target selector for compliance checks.</p>
+ <table><thead><tr><th>Space</th><th>RT60 (s)</th></tr></thead><tbody>
+ <tr><td>Recording or control room</td><td>0.2 to 0.4</td></tr><tr><td>Classroom, small meeting room</td><td>0.4 to 0.7</td></tr>
+ <tr><td>Open-plan office</td><td>0.4 to 0.7</td></tr><tr><td>Lecture theatre</td><td>0.7 to 1.0</td></tr>
+ <tr><td>Church, large hall</td><td>1.5 to 3+</td></tr><tr><td>Concert hall</td><td>1.8 to 2.2</td></tr></tbody></table>
+ <table style="margin-top:10px"><thead><tr><th>Space</th><th>Background noise dB(A)</th></tr></thead><tbody>
+ <tr><td>Bedroom, quiet study</td><td>25 to 35</td></tr><tr><td>Classroom (ANSI/ASA S12.60 limit)</td><td>35 or less</td></tr>
+ <tr><td>Meeting room</td><td>35 to 40</td></tr><tr><td>Private office</td><td>35 to 45</td></tr><tr><td>Open-plan office</td><td>40 to 50</td></tr></tbody></table>
+ <p class="note" style="margin-top:8px">Why those bands: speech energy and clarity sit mainly between 125 Hz and 4 kHz, so reverberation and noise in those octaves matter most for intelligibility.</p>`};
+$$('[data-info]').forEach(b=>b.onclick=()=>{$('#dlgBody').innerHTML=INFO[b.dataset.info]();$('#dlg').showModal()});
+$('#dlgClose').onclick=()=>$('#dlg').close();
+
+/* ---------- gauge + led ---------- */
+const G={cx:180,cy:255,R:220,span:44,min:20,max:130};
+const gAng=db=>-G.span+2*G.span*(Math.min(G.max,Math.max(G.min,db))-G.min)/(G.max-G.min);
+const gPt=(a,r)=>[G.cx+r*Math.sin(a*Math.PI/180),G.cy-r*Math.cos(a*Math.PI/180)];
+function arcPath(a0,a1,r){const [x0,y0]=gPt(a0,r),[x1,y1]=gPt(a1,r);return `M${x0.toFixed(1)} ${y0.toFixed(1)}A${r} ${r} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`}
+(function buildGauge(){let h='';
+ for(let v=G.min;v<=G.max;v+=1){const maj=v%10===0,mid=v%5===0,mn=v%2===0;if(!maj&&!mid&&!mn)continue;
+  const a=gAng(v),len=maj?22:mid?15:8,[x0,y0]=gPt(a,G.R-len),[x1,y1]=gPt(a,G.R),col=v>=100?'#e5584f':'currentColor';
+  h+=`<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}" stroke="${col}" stroke-width="${maj?3:mid?2:1}"/>`;
+  if(maj){const [tx,ty]=gPt(a,G.R+15);h+=`<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" fill="${col}" font-size="14" text-anchor="middle" dominant-baseline="middle" transform="rotate(${a.toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)})">${v}</text>`}}
+ h+=`<path id="prog" d="${arcPath(gAng(20),gAng(20),G.R-40)}" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+ h+=`<g id="needle" transform="rotate(${gAng(20)} ${G.cx} ${G.cy})"><line x1="${G.cx}" y1="${G.cy-(G.R-52)}" x2="${G.cx}" y2="${G.cy-(G.R+3)}" stroke="#e5584f" stroke-width="4.5"/></g>`;
+ $('#gauge').innerHTML=h})();
+const elNeedle=$('#needle'),elProg=$('#prog');
+const ledColor=f=>{const h=f<.3?200-(f/.3)*80:f<.6?120-((f-.3)/.3)*70:50-((f-.6)/.4)*50;return `hsl(${h.toFixed(0)} 62% 48%)`};
+const LED_N=24,led=$('#led'),ledEls=[];
+for(let i=0;i<LED_N;i++){const e=document.createElement('i');e.style.setProperty('--c',ledColor(i/(LED_N-1)));led.appendChild(e);ledEls.push(e)}
+function ledUpdate(L,pk){const n=(L-20)/110*LED_N,p=Math.floor((pk-20)/110*LED_N);ledEls.forEach((e,i)=>{e.className=(i<n?'on':'')+(i===p&&isFinite(pk)?' pk':'')})}
+function setRef(t){const el=$('#refText');if(el.textContent===t&&el.dataset.fit)return;el.textContent=t;el.style.fontSize='';el.dataset.fit=1;let f=parseFloat(getComputedStyle(el).fontSize)||12;while(el.scrollWidth>el.clientWidth+1&&f>8.5){f-=0.5;el.style.fontSize=f+'px'}}
+function refIdx(L){let i=0;REFS.forEach((r,k)=>{if(L>=r[0]-5)i=k});return i}
+
+/* ---------- weighting filters ---------- */
+function bil(n,d,K){const K2=K*K;const b0=n[0]*K2+n[1]*K+n[2],b1=2*n[2]-2*n[0]*K2,b2=n[0]*K2-n[1]*K+n[2];
+ const a0=d[0]*K2+d[1]*K+d[2],a1=2*d[2]-2*d[0]*K2,a2=d[0]*K2-d[1]*K+d[2];return{b:[b0/a0,b1/a0,b2/a0],a:[1,a1/a0,a2/a0]}}
+function weightSections(w,fs){const T=2*Math.PI,w1=T*20.598997,w2=T*107.65265,w3=T*737.86223,w4=T*12194.217;
+ const K=T*1000/Math.tan(Math.PI*1000/fs);
+ const secs=[bil([1,0,0],[1,2*w1,w1*w1],K)];
+ if(w==='A')secs.push(bil([1,0,0],[1,w2+w3,w2*w3],K));
+ secs.push(bil([0,0,w4*w4],[1,2*w4,w4*w4],K));
+ const om=T*1000/fs,c1=Math.cos(om),s1=-Math.sin(om),c2=Math.cos(2*om),s2=-Math.sin(2*om);let g=1;
+ for(const s of secs){const nr=s.b[0]+s.b[1]*c1+s.b[2]*c2,ni=s.b[1]*s1+s.b[2]*s2,dr=1+s.a[1]*c1+s.a[2]*c2,di=s.a[1]*s1+s.a[2]*s2;g*=Math.hypot(nr,ni)/Math.hypot(dr,di)}
+ return{secs,gain:1/g}}
+function buildChains(){S.chains={};for(const w of['A','C']){const {secs,gain}=weightSections(w,S.fs);const nodes=secs.map(s=>S.ctx.createIIRFilter(s.b,s.a));const g=S.ctx.createGain();g.gain.value=gain;nodes.push(g);for(let i=0;i<nodes.length-1;i++)nodes[i].connect(nodes[i+1]);S.chains[w]=nodes}}
+function setWeight(w){S.weight=w;if(!S.pre)return;try{S.pre.disconnect(S.aLvl)}catch{}
+ for(const k in S.chains){try{S.pre.disconnect(S.chains[k][0])}catch{}try{S.chains[k].at(-1).disconnect(S.aLvl)}catch{}}
+ if(w==='Z')S.pre.connect(S.aLvl);else{const c=S.chains[w];S.pre.connect(c[0]);c.at(-1).connect(S.aLvl)}resetStats()}
+$('#selW').onchange=e=>{S.weight=e.target.value;$('#unitLbl').textContent={A:'dB-A',C:'dB-C',Z:'dB'}[S.weight];setWeight(S.weight);S.bandPk.fill(0);S.slots=[];S.wfNeedClear=true;if(!S.running){resetStats();refreshFrozen()}drawSpec(0)};
+$('#selT').onchange=e=>{S.tw=e.target.value};
+$('#btnResetMax').onclick=()=>{resetStats();['#mx','#av'].forEach(i=>$(i).textContent='--');S.sumT=0};
+function resetStats(){if(S.keep)return;if(S.pkArr)resetPk();S.max=-Infinity;S.min=Infinity;S.sumE=0;S.sumT=0;S.bandPk.fill(0);S.peakDb=-Infinity}
+
+/* ---------- FFT for spectrum ---------- */
+let NF=4096,win,rev,cosT,sinT,FR,FI,PW,Sw2=0;
+function initFFT(n){NF=n;win=new Float64Array(n);rev=new Uint32Array(n);cosT=new Float64Array(n/2);sinT=new Float64Array(n/2);FR=new Float64Array(n);FI=new Float64Array(n);PW=new Float64Array(n/2+1);Sw2=0;
+ for(let i=0;i<n;i++){win[i]=0.5-0.5*Math.cos(2*Math.PI*i/(n-1));Sw2+=win[i]*win[i];let r=0,x=i;for(let b=0;b<Math.log2(n);b++){r=(r<<1)|(x&1);x>>=1}rev[i]=r}
+ for(let k=0;k<n/2;k++){cosT[k]=Math.cos(2*Math.PI*k/n);sinT[k]=Math.sin(2*Math.PI*k/n)}
+ bufS=new Float32Array(n);S.pwSm=new Float64Array(n/2+1);S.cum=new Float64Array(n/2+2);WP=new Float64Array(n/2+1);CUMW=new Float64Array(n/2+2);
+ S.alpha=n<=2048?0.85:n<=4096?0.65:0.5;if(S.fs)buildBands();if(S.aSpec)S.aSpec.fftSize=n}
+function fftPow(x){for(let i=0;i<NF;i++){const j=rev[i];FR[i]=x[j]*win[j];FI[i]=0}
+ for(let size=2;size<=NF;size<<=1){const half=size>>1,step=NF/size;for(let i=0;i<NF;i+=size){for(let j=0,k=0;j<half;j++,k+=step){const wr=cosT[k],wi=-sinT[k],a=i+j,b=a+half,tr=FR[b]*wr-FI[b]*wi,ti=FR[b]*wi+FI[b]*wr;FR[b]=FR[a]-tr;FI[b]=FI[a]-ti;FR[a]+=tr;FI[a]+=ti}}}
+ for(let k=0;k<=NF/2;k++)PW[k]=FR[k]*FR[k]+FI[k]*FI[k]}
+let BK=[];function buildBands(){const bw=S.fs/NF;BK=TH3.map(fc=>{const lo=fc/Math.pow(2,1/6),hi=fc*Math.pow(2,1/6);let k0=Math.ceil(lo/bw),k1=Math.floor(hi/bw);if(k1<k0){const k=Math.round(fc/bw);return{k0:k,k1:k,sc:(hi-lo)/bw}}return{k0,k1,sc:1}})}
+function bandsFromPW(){const f=2/(NF*Sw2);for(let i=0;i<TH3.length;i++){const b=BK[i];let s=0;for(let k=Math.max(1,b.k0);k<=Math.min(NF/2-1,b.k1);k++)s+=PW[k];S.band[i]=s*f*b.sc}}
+
+/* ---------- audio start/stop ---------- */
+const bufL=new Float32Array(8192);let bufS=new Float32Array(4096);S.alpha=0.65;
+async function startAudio(keep){
+ S.keep=!!keep;
+ await stopAudio();
+ if(!navigator.mediaDevices?.getUserMedia){setStatus('This browser has no microphone API','bad');S.keep=false;return}
+ const a={echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1};
+ if(S.devId)a.deviceId={exact:S.devId};
+ try{S.stream=await navigator.mediaDevices.getUserMedia({audio:a})}
+ catch(e){if(S.devId&&e.name==='OverconstrainedError'){S.devId='';return startAudio(keep)}setStatus('Mic blocked: '+(e.name==='NotAllowedError'?'allow microphone access in Chrome':e.message),'bad');S.keep=false;return}
+ S.ctx=new(window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});await S.ctx.resume();S.fs=S.ctx.sampleRate;
+ S.src=S.ctx.createMediaStreamSource(S.stream);S.pre=S.ctx.createGain();S.src.connect(S.pre);
+ S.aSpec=S.ctx.createAnalyser();S.aSpec.fftSize=NF;S.aSpec.smoothingTimeConstant=0;
+ S.aLvl=S.ctx.createAnalyser();S.aLvl.fftSize=8192;S.aLvl.smoothingTimeConstant=0;
+ S.pre.connect(S.aSpec);buildChains();buildBands();setWeight(S.weight);
+ S.proc=S.ctx.createScriptProcessor(2048,1,1);S.proc.onaudioprocess=onProc;
+ const z=S.ctx.createGain();z.gain.value=0;S.proc.connect(z);z.connect(S.ctx.destination);
+ const tr=S.stream.getAudioTracks()[0],st=tr.getSettings();S.label=tr.label||'Unnamed microphone';if(st.deviceId)S.devId=st.deviceId;
+ tr.onended=()=>{setStatus('Mic disconnected','bad');stopAudio()};
+ $('#micLabel').textContent=S.label;$('#micKind').textContent=guessKind(S.label);$('#fMic').value=S.label;
+ const raw=st.echoCancellation===false&&st.noiseSuppression===false&&st.autoGainControl===false;S.rawOk=raw;
+ $('#micRaw').textContent=raw?'Yes (echo cancel, noise suppression, AGC off)':'No: the phone may be processing audio';$('#micFs').textContent=S.fs+' Hz';
+ loadCal();await refreshDevices();
+ S.running=true;S.lastT=performance.now();S.audioT=S.lastT;S.fbTracks=[];S.fb=[];resetStats();requestAnimationFrame(loop);
+ try{S.wake=await navigator.wakeLock?.request('screen')}catch{}
+ S.keep=false;syncRunUi();setStatus(S.label+(S.calibrated?'':' (uncal.)'),S.calibrated?'ok':'warn');
+}
+async function stopAudio(){S.running=false;try{S.wake?.release()}catch{}
+ if(S.stream)S.stream.getTracks().forEach(t=>{t.onended=null;t.stop()});
+ if(S.proc){S.proc.onaudioprocess=null}
+ if(S.ctx){try{await S.ctx.close()}catch{}}
+ S.ctx=S.stream=S.src=S.proc=S.pre=S.eq=null;syncRunUi();
+ if(NZ.running)finishNoise(true);if(IRc.state!=='idle'&&IRc.state!=='done')cancelArm();}
+function setStatus(t,c){const p=$('#micPill');p.textContent=t;p.className='pill '+(c||'')}
+function syncRunUi(){const on=!!S.running;$('#btnMic').textContent=on?'Stop':'Start'}
+function toggleRun(){if(S.running){S.userStopped=true;stopAudio();setStatus('Paused','warn')}else{const keep=S.userStopped;S.userStopped=false;startAudio(keep)}}
+$('#btnMic').onclick=toggleRun;
+function guessKind(l){l=(l||'').toLowerCase();return /bluetooth|bt |airpods|buds|headset|hands-free/.test(l)?'Bluetooth (voice-processed, not ideal)':/usb|audio interface|scarlett|focusrite|umik|behringer|shure|rode|zoom/.test(l)?'USB / external':/default|communications|built|internal|mic|microphone array|front|back|bottom|top/.test(l)||!l?'Probably built-in':'Unknown'}
+async function refreshDevices(){try{const d=(await navigator.mediaDevices.enumerateDevices()).filter(x=>x.kind==='audioinput'&&x.deviceId!=='communications');
+ const html='<option value="">Default microphone</option>'+d.filter(x=>x.deviceId).map((x,i)=>`<option value="${esc(x.deviceId)}">${esc(x.label||('Microphone '+(i+1)))} (${esc(guessKind(x.label))})</option>`).join('');
+ [$('#selMic'),$('#selMicLive')].forEach(sel=>{sel.innerHTML=html;sel.value=S.devId||''})}catch{}}
+const onMicSel=e=>{S.devId=e.target.value;$('#selMic').value=$('#selMicLive').value=S.devId;if(S.running)startAudio()};
+$('#selMic').onchange=onMicSel;$('#selMicLive').onchange=onMicSel;
+$('#btnRefreshMics').onclick=refreshDevices;
+navigator.mediaDevices?.addEventListener?.('devicechange',()=>{refreshDevices();toast('Audio devices changed. Check the Setup tab to pick a microphone.')});
+
+
+/* ---------- auto-start audio for tests ---------- */
+function pickMic(devs){return new Promise(res=>{
+ const d=$('#micDlg'),box=$('#micList');
+ const ext=devs.find(x=>/USB|Bluetooth/.test(guessKind(x.label)));
+ const pre=devs.some(x=>x.deviceId===S.devId)?S.devId:(ext||devs[0]).deviceId;
+ box.innerHTML=devs.map(x=>`<label class="radio"><input type="radio" name="micpick" value="${esc(x.deviceId)}" ${x.deviceId===pre?'checked':''}><span>${esc(x.label||'Microphone')}<br><small>${esc(guessKind(x.label))}</small></span></label>`).join('');
+ let done=false;const fin=v=>{if(done)return;done=true;if(d.open)d.close();res(v)};
+ $('#micOk').onclick=()=>fin((box.querySelector('input:checked')||{}).value??null);
+ $('#micCancel').onclick=()=>fin(null);d.oncancel=()=>fin(null);d.showModal()})}
+async function ensureAudio(){
+ if(S.running)return true;
+ try{const list=async()=>(await navigator.mediaDevices.enumerateDevices()).filter(x=>x.kind==='audioinput');
+  let devs=await list();
+  if(devs.length&&!devs.some(x=>x.label)){const tmp=await navigator.mediaDevices.getUserMedia({audio:true});tmp.getTracks().forEach(t=>t.stop());devs=await list()}
+  const real=devs.filter(x=>x.deviceId&&x.deviceId!=='default'&&x.deviceId!=='communications');
+  if(real.some(x=>/USB|Bluetooth/.test(guessKind(x.label)))||real.length>1){const v=await pickMic(real);if(v==null)return false;S.devId=v}
+ }catch(e){/* startAudio reports permission problems */}
+ S.userStopped=false;await startAudio();if(!S.running)return false;
+ await new Promise(r=>setTimeout(r,700));return S.running}
+
+/* ---------- calibration ---------- */
+function loadCal(){const c=store.get('cal|'+S.label,null);if(c){S.cal=c.cal;S.calibrated=true}else{S.cal=120;S.calibrated=false}S.fcal=store.get('fcal|'+S.label,{on:false,pts:{}});renderFc();applyEq();calUi()}
+function calUi(){$('#calOff').value=S.cal.toFixed(1);$('#calState').textContent=(S.calibrated?'Calibrated':'Uncalibrated')+(anyCorr()?' + frequency correction':'');$('#calState').className='badge '+(S.calibrated?'pass':'warn');$('#calBanner').style.display=S.calibrated?'none':'block'}
+$('#btnCal').onclick=()=>{if(!S.running)return toast('Start the mic first.');const ref=+$('#calRef').value;const flat=10*Math.log10(S.bandSm.reduce((a,b)=>a+b,0)+1e-20)+S.cal;S.cal+=ref-flat;S.calibrated=true;store.set('cal|'+S.label,{cal:S.cal});calUi();resetStats();toast('Calibrated to '+ref+' dB')};
+$('#calOff').onchange=e=>{const v=+e.target.value;if(isFinite(v)){S.cal=v;S.calibrated=true;store.set('cal|'+S.label,{cal:S.cal});calUi()}};
+
+/* ---------- main loop ---------- */
+const fmtT=x=>{x=Math.floor(x);return String(Math.floor(x/60)).padStart(2,'0')+':'+String(x%60).padStart(2,'0')};
+function loop(t){
+ if(!S.running)return;requestAnimationFrame(loop);
+ let dt=(t-S.lastT)/1000;S.lastT=t;if(dt<=0)return;
+ const N=Math.min(8192,Math.max(64,Math.round(dt*S.fs))),dte=N/S.fs;
+ S.aLvl.getFloatTimeDomainData(bufL);
+ let s=0;for(let i=8192-N;i<8192;i++){const v=bufL[i];s+=v*v}const ms=s/N;
+ let tau=({F:0.125,M:0.5,S:1})[S.tw]||0.125;if(S.tw==='I')tau=ms>S.msF?0.035:1.5;S.msF+=(1-Math.exp(-dte/tau))*(ms-S.msF);S.msS+=(1-Math.exp(-dte))*(ms-S.msS);
+ const L=toDb(S.msF);
+ if(!S.paused){
+  S.sumE+=ms*dte;S.sumT+=dte;if(S.sumT>1){if(L>S.max)S.max=L;if(L<S.min)S.min=L}
+  S.shown+=(L-S.shown)*0.65;const a=gAng(S.shown);
+  elNeedle.setAttribute('transform',`rotate(${a.toFixed(1)} ${G.cx} ${G.cy})`);elProg.setAttribute('d',arcPath(gAng(20),a,G.R-40));
+  ledUpdate(L,S.max)}
+ if(++S.frame>0){
+  S.aSpec.getFloatTimeDomainData(bufS);let pk=0;for(let i=0;i<NF;i++){const a=Math.abs(bufS[i]);if(a>pk)pk=a}
+  if(pk>=0.99)S.clipUntil=t+2500;
+  if(!S.paused)S.peakDb=Math.max(S.peakDb,20*Math.log10(pk+1e-9)+S.cal);
+  fftPow(bufS);bandsFromPW();
+  for(let i=0;i<31;i++)S.bandSm[i]+=S.alpha*(S.band[i]-S.bandSm[i]);
+  for(let k=0;k<=NF/2;k++)S.pwSm[k]+=S.alpha*(PW[k]-S.pwSm[k]);
+  if(NZ.running)noiseAccumulate();
+  if(S.showWf&&!S.paused&&t-S.wfT>=85&&document.getElementById('tab-live').classList.contains('active')){S.wfT=t;buildCum();pushWfRow(wfRowVals(undefined,S.res==='fft'?48:S.res))}
+  wfRecord(t);
+  if(!S.paused&&document.getElementById('tab-live').classList.contains('active'))drawSpec(t);
+ }
+ if(t-S.txt>60){S.txt=t;const clip=t<S.clipUntil;
+  if(!S.paused){
+   $('#big').textContent=L<15?'--':L.toFixed(1);$('#mx').textContent=isFinite(S.max)?S.max.toFixed(1):'--';
+   $('#av').textContent=S.sumT>0.5?(10*Math.log10(S.sumE/S.sumT+1e-20)+S.cal).toFixed(1):'--';
+   
+   const ri=refIdx(L);setRef(clip?'Clipping: move away from the sound source':L<20?'Below the range of a phone microphone':`${REFS[ri][0]} dB: ${REFS[ri][1]}`);
+   $('#refDot').style.background=clip?'#e5584f':ledColor(Math.min(1,Math.max(0,(L-20)/110)))}
+  calLive();
+  if(IRc.state==='armed'||IRc.state==='post')$('#irState').textContent=IRc.state==='armed'?'Listening':'Recording decay';
+ }
+}
+
+/* ---------- charts ---------- */
+const THEME={dark:{bg:'#14161a',grid:'#2f343c',text:'#9aa0a8',bar:'#5ec8d8',peak:'#f2a93b',target:'#e5584f',fill:'rgba(94,200,216,.22)'},
+ light:{bg:'#ffffff',grid:'#dfe3e8',text:'#5d6470',bar:'#0b7c92',peak:'#c77d00',target:'#c0392b',fill:'rgba(11,124,146,.2)'},
+ print:{bg:'#ffffff',grid:'#dddddd',text:'#444444',bar:'#1f6f8b',peak:'#c77d00',target:'#c0392b',fill:'rgba(31,111,139,.22)'}};
+const isLight=()=>document.documentElement.dataset.theme==='light';
+const scrTheme=()=>isLight()?THEME.light:THEME.dark;
+const SCOL={dark:{bg:'#14161a',grid:'#2f343c',text:'#9aa0a8',hdr:'#f1eee8',num:'#fff',line:'#5ec8d8',fill:'rgba(94,200,216,.16)',bar:'#5ec8d8',cursor:'#ffffff',cursorEdge:'#000'},
+ light:{bg:'#ffffff',grid:'#dfe3e8',text:'#5d6470',hdr:'#1c1f24',num:'#000',line:'#0b7c92',fill:'rgba(11,124,146,.14)',bar:'#1f8aa6',cursor:'#111111',cursorEdge:'#ffffff'}};
+const SC=()=>isLight()?SCOL.light:SCOL.dark;
+function sizeCv(cv){const d=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;if(!w)return 0;if(cv.width!==Math.round(w*d)||cv.height!==Math.round(h*d)){cv.width=Math.round(w*d);cv.height=Math.round(h*d)}return d}
+function drawBandChart(cv,d,centers,vals,o){
+ const th=o.th||scrTheme(),c=cv.getContext('2d'),W=cv.width,H=cv.height;c.fillStyle=th.bg;c.fillRect(0,0,W,H);
+ const L=46*d,R=10*d,T=14*d,B=28*d,pw=W-L-R,ph=H-T-B;
+ const lx=f=>L+pw*Math.log(f/o.xmin)/Math.log(o.xmax/o.xmin),ly=v=>T+ph*(1-(v-o.ymin)/(o.ymax-o.ymin));
+ c.font=(11*d)+'px system-ui,sans-serif';c.lineWidth=d;c.strokeStyle=th.grid;c.fillStyle=th.text;c.textAlign='right';c.textBaseline='middle';
+ for(let v=o.ymin;v<=o.ymax+1e-9;v+=o.ystep){const y=ly(v);c.beginPath();c.moveTo(L,y);c.lineTo(W-R,y);c.stroke();c.fillText(o.yfmt?o.yfmt(v):String(+v.toFixed(2)),L-5*d,y)}
+ c.textAlign='center';c.textBaseline='top';
+ for(const f of o.ticks){const x=lx(f);c.beginPath();c.moveTo(x,T);c.lineTo(x,T+ph);c.stroke();c.fillText(f>=1000?(f/1000)+'k':String(f),x,T+ph+6*d)}
+ for(let i=0;i<centers.length;i++){const v=vals[i];if(v==null||!isFinite(v))continue;const f=centers[i],x0=lx(f*Math.pow(2,-o.bw/2)),x1=lx(f*Math.pow(2,o.bw/2)),y=ly(Math.min(Math.max(v,o.ymin),o.ymax));
+  c.fillStyle=th.bar;c.fillRect(x0,y,Math.max(1,x1-x0),T+ph-y);
+  if(o.labels){c.fillStyle=th.text;c.textBaseline='bottom';c.fillText(o.labels(v),(x0+x1)/2,y-2*d);c.textBaseline='top'}}
+ if(o.peak){c.strokeStyle=th.peak;c.lineWidth=2*d;for(let i=0;i<centers.length;i++){const p=o.peak[i];if(!(p>o.ymin))continue;const f=centers[i],y=ly(Math.min(p,o.ymax));c.beginPath();c.moveTo(lx(f*Math.pow(2,-o.bw/2)),y);c.lineTo(lx(f*Math.pow(2,o.bw/2)),y);c.stroke()}c.lineWidth=d}
+ if(o.target!=null){const y=ly(o.target);c.strokeStyle=th.target;c.lineWidth=2*d;c.setLineDash([6*d,4*d]);c.beginPath();c.moveTo(L,y);c.lineTo(W-R,y);c.stroke();c.setLineDash([]);c.fillStyle=th.target;c.textAlign='right';c.textBaseline='bottom';c.fillText(o.targetLabel||'',W-R-4*d,y-2*d)}
+ c.fillStyle=th.text;c.textAlign='left';c.textBaseline='top';c.fillText(o.ytitle||'',L+4*d,T+2*d)}
+const specDb=new Float64Array(31);S.pwSm=new Float64Array(NF/2+1);S.lineDb=null;S.lineF=null;S.min=Infinity;S.paused=false;
+let specMode=store.get('specMode','line');
+const SPEC_TICKS=[[20,'20Hz'],[50,'50'],[100,'100'],[200,'200'],[500,'500'],[1000,'1k'],[2000,'2k'],[5000,'5k'],[10000,'10k'],[20000,'20k']];
+const XMIN=17.8,XMAX=22400,LNR=Math.log(XMAX/XMIN),FR6=Math.pow(2,1/6);
+const BANDS=[
+ {n:'Sub-Bass',s:'Sub-Bass',lo:20,hi:60,col:'#7b6bf0',d:'Frequencies often felt more than heard, such as deep synth drops and heavy kick impacts.'},
+ {n:'Bass',s:'Bass',lo:60,hi:250,col:'#3b82d6',d:'The foundational weight and punch of the rhythm section, including bass guitars and lower drum shells.'},
+ {n:'Low-Mids',s:'Low-Mid',t:'L-Mid',lo:250,hi:500,col:'#2fb59a',d:'The body and warmth of most instruments. Excess here can sound muddy or boxy.'},
+ {n:'Midrange',s:'Mid',lo:500,hi:2000,col:'#9bbf3a',d:'The core space where most melodic instruments and lead vocals sit.'},
+ {n:'Upper-Mids / Presence',s:'Presence',lo:2000,hi:6000,col:'#e0a030',d:'Vocal clarity, attack transients, and the edge on guitars and snares.'},
+ {n:'Brilliance / Air',s:'Air',lo:6000,hi:20000,col:'#e0605a',d:'High-frequency harmonics, cymbal sparkle, and the sense of space.'}];
+S.showBands=store.get('showBands2',false);S.showTones=store.get('showTones2',false);S.cum=new Float64Array(NF/2+2);S.dom=[];S.domT=0;S.slots=[];S.domUi=0;S.showPk=store.get('showPk2',false);S.showF0=store.get('showF02',false);S.f0=[];S.f0t=[];S.showWf=store.get('showWf2',false);S.wfT=0;S.wfNeedClear=true;S.showFb=store.get('showFb3',false);S.showCursor=store.get('showCursor2',false);S.audioT=0;S.fb=[];S.fbTracks=[];S.cursor=null;S.callRect=null;S.drag=false;
+let WP=new Float64Array(NF/2+1),CUMW=new Float64Array(NF/2+2);
+const wlab=()=>({A:'dB(A)',C:'dB(C)',Z:'dB'})[S.weight];
+const NN=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const bandOf=f=>BANDS.find(b=>f>=b.lo&&f<b.hi)||(f<20?BANDS[0]:BANDS[5]);
+const fmtF=f=>Math.round(f)>=1000?(f/1000).toFixed(f>=10000?1:2)+' kHz':(f<100?f.toFixed(1):f.toFixed(0))+' Hz';
+function pitch(f){const m=69+12*Math.log2(f/440),r=Math.round(m);return{name:NN[((r%12)+12)%12]+(Math.floor(r/12)-1),cents:Math.round((m-r)*100)}}
+function refreshFrozen(){let sum=0;for(let i=0;i<31;i++)sum+=S.bandSm[i]*Math.pow(10,Wdb(TH3[i],S.weight)/10);if(sum<=0)return;const L=10*Math.log10(sum)+S.cal;S.shown=L;
+ elNeedle.setAttribute('transform',`rotate(${gAng(L).toFixed(1)} ${G.cx} ${G.cy})`);elProg.setAttribute('d',arcPath(gAng(20),gAng(L),G.R-40));ledUpdate(L,-Infinity);
+ $('#big').textContent=L<15?'--':L.toFixed(1);['#mx','#av'].forEach(i=>$(i).textContent='--')}
+const PKN=600,PKF=Array.from({length:PKN+1},(_,i)=>20*Math.pow(1000,Math.min(i,PKN-1)/(PKN-1)));
+S.pkArr=new Float32Array(PKN).fill(-Infinity);S.pkT=new Float64Array(PKN);S.pkMax={v:-Infinity,f:0};S.pkLast=0;S.pkNow=0;S.pkDt=0;S.res=store.get('res2',12);
+function peakStep(A,T,i,v,now,dt){if(!(A[i]>-1e8)||v>=A[i]){A[i]=v;T[i]=now}else if(now-T[i]>1000)A[i]=Math.max(v,A[i]-2*dt)}
+function resetPk(){S.pkArr.fill(-Infinity);S.pkT.fill(0);S.pkMax={v:-Infinity,f:0};S.bandPk.fill(0);if(S.bPk){S.bPk.fill(-Infinity);S.bPkT.fill(0)}}
+function updatePk(){const now=performance.now();S.pkDt=Math.min(0.2,(now-(S.pkLast||now))/1000);S.pkLast=now;S.pkNow=now;let mv=-Infinity,mf=0;
+ for(let i=0;i<PKN;i++){const v=S.res==='fft'?binVal(PKF[i],PKF[i+1]):lineVal(PKF[i],null,S.res);peakStep(S.pkArr,S.pkT,i,v,now,S.pkDt);if(S.pkArr[i]>mv){mv=S.pkArr[i];mf=PKF[i]}}
+ S.pkMax={v:mv,f:mf}}
+function updatePkLine(){const el=$('#pkLine');if(!S.showPk){el.style.display='none';el.dataset.h='';return}el.style.display='block';
+ const h=isFinite(S.pkMax.v)?`Peak level: ${S.pkMax.v.toFixed(1)} ${wlab()} at ${fmtF(S.pkMax.f)} (holds about 1 s, then falls 2 dB/s)`:'Peak level: waiting for sound';
+ if(el.dataset.h===h)return;el.dataset.h=h;el.textContent=h;el.style.fontSize='';let f=13;while(el.scrollWidth>el.clientWidth+1&&f>9){f-=0.5;el.style.fontSize=f+'px'}}
+const resName=n=>n==='fft'?'narrowband (FFT)':n===1?'octave':'1/'+n+' octave';
+function specNote(){$('#specRead').textContent=specMode==='line'?`Continuous spectrum at ${resName(S.res)} resolution (change it under Setup, Measurement settings). Turn on Touch cursor, then touch or drag on the graph to read it.`:`${resName(barN())} bars (up to 1/12 octave). Turn on Touch cursor, then touch or drag on the graph to read it.`}
+function buildCum(){const P=S.pwSm;S.cum[0]=0;for(let k=0;k<=NF/2;k++)S.cum[k+1]=S.cum[k]+P[k]}
+function lineVal(f,w,N){N=N||3;const bw=S.fs/NF,h=Math.pow(2,1/(2*N)),lo=f/h,hi=f*h;let k0=Math.ceil(lo/bw),k1=Math.floor(hi/bw),ms;
+ if(k1<k0){const k=Math.min(NF/2,Math.round(f/bw));ms=S.pwSm[k]*(hi-lo)/bw}else{k0=Math.max(1,k0);k1=Math.min(NF/2-1,k1);ms=S.cum[k1+1]-S.cum[k0]}
+ return 10*Math.log10(2*ms/(NF*Sw2)*Math.pow(10,Wdb(f,w||S.weight)/10)+1e-20)+S.cal}
+function binVal(f0,f1,w){const bw=S.fs/NF;let p=0;
+ if(f1-f0<bw){const kk=f0/bw,k=Math.floor(kk),a=kk-k;p=S.pwSm[k]*(1-a)+S.pwSm[Math.min(NF/2,k+1)]*a}
+ else{const k0=Math.max(1,Math.floor(f0/bw)),k1=Math.min(NF/2,Math.ceil(f1/bw));for(let k=k0;k<=k1;k++)if(S.pwSm[k]>p)p=S.pwSm[k]}
+ return 10*Math.log10(2*p/(NF*Sw2)*Math.pow(10,Wdb(Math.sqrt(f0*f1),w||S.weight)/10)+1e-20)+S.cal}
+const specVal=f=>S.res==='fft'?binVal(f/1.003,f*1.003):lineVal(f,null,S.res);
+const barN=()=>S.res==='fft'?12:Math.min(12,S.res);
+function barCentres(N){const a=[];for(let j=Math.floor(N*Math.log2(20/1000));;j++){const f=1000*Math.pow(2,j/N);if(f>20000*Math.pow(2,1/(2*N)))break;a.push(f)}return a}
+function bandLevel(b){let sum=0;TH3.forEach((fc,i)=>{if((fc>=b.lo&&fc<b.hi)||(b.hi===20000&&fc===20000))sum+=S.bandSm[i]*Math.pow(10,Wdb(fc,S.weight)/10)});return 10*Math.log10(sum+1e-20)+S.cal}
+function findDominant(){const bw=S.fs/NF,P=S.pwSm,kMin=Math.max(2,Math.ceil(20/bw)),kMax=Math.min(NF/2-3,Math.floor(20000/bw)),ratio=Math.pow(2,1/3);
+ CUMW[0]=0;for(let k=0;k<=NF/2;k++){const w=P[k]*Math.pow(10,Wdb(Math.max(k*bw,1),S.weight)/10);WP[k]=w;CUMW[k+1]=CUMW[k]+w}
+ const c=[];for(let k=kMin;k<=kMax;k++){const v=WP[k];if(v>WP[k-1]&&v>=WP[k+1]){const k0=Math.max(1,Math.floor(k/ratio)),k1=Math.min(NF/2-1,Math.ceil(k*ratio)),mean=(CUMW[k1+1]-CUMW[k0])/(k1-k0+1);if(v>10*mean)c.push([k,v])}}
+ c.sort((a,b)=>b[1]-a[1]);const out=[];
+ for(const [k] of c){if(out.length>=3)break;const a=Math.log(WP[k-1]+1e-30),b=Math.log(WP[k]+1e-30),d2=Math.log(WP[k+1]+1e-30),den=a-2*b+d2;let dl=den<0?0.5*(a-d2)/den:0;dl=Math.max(-0.5,Math.min(0.5,dl));
+  const f=(k+dl)*bw;if(out.some(o=>Math.abs(Math.log(f/o.f))<Math.LN2/6))continue;const lvl=lineVal(f);if(lvl<28)continue;out.push({f,lvl,p:pitch(f),band:bandOf(f)})}
+ out.sort((a,b)=>b.lvl-a.lvl);return out}
+function specFrame(cv,d){const c=cv.getContext('2d'),W=cv.width,H=cv.height,L0=32*d,R0=8*d,T0=(S.showBands?40:22)*d,B0=22*d,pw=W-L0-R0,ph=H-T0-B0,ymin=0,ymax=120;
+ const K=SC();c.fillStyle=K.bg;c.fillRect(0,0,W,H);
+ const fx=f=>L0+pw*Math.log(f/XMIN)/LNR,vy=v=>T0+ph*(1-(Math.min(ymax,Math.max(ymin,v))-ymin)/(ymax-ymin));
+ if(S.showBands){c.textAlign='center';c.textBaseline='middle';
+  for(const b of BANDS){const x0=Math.max(L0,fx(b.lo)),x1=Math.min(L0+pw,fx(b.hi)),w=x1-x0;
+   c.fillStyle=b.col+'1f';c.fillRect(x0,T0,w,ph);c.fillStyle=b.col+'59';c.fillRect(x0,T0-36*d,w,36*d);
+   c.strokeStyle=b.col+'aa';c.lineWidth=d;c.beginPath();c.moveTo(x0,T0-36*d);c.lineTo(x0,T0+ph);c.stroke();
+   c.font=(9.5*d)+'px system-ui,sans-serif';let nm='';for(const cand of [b.n,b.s,b.t]){if(cand&&c.measureText(cand).width<=w-3*d){nm=cand;break}}
+   c.fillStyle=K.hdr;if(nm)c.fillText(nm,(x0+x1)/2,T0-26*d);
+   c.font='600 '+(11*d)+'px system-ui,sans-serif';c.fillStyle=K.num;c.fillText(bandLevel(b).toFixed(0),(x0+x1)/2,T0-11*d)}}
+ c.font=(10*d)+'px system-ui,sans-serif';c.lineWidth=d;c.strokeStyle=K.grid;c.fillStyle=K.text;c.textAlign='right';c.textBaseline='middle';
+ for(let v=ymin;v<=ymax;v+=20){const y=vy(v);c.beginPath();c.moveTo(L0,y);c.lineTo(W-R0,y);c.stroke();c.fillText(String(v),L0-5*d,y)}
+ c.textAlign='center';c.textBaseline='top';
+ for(const [f,l] of SPEC_TICKS){const x=fx(f);c.beginPath();c.moveTo(x,T0);c.lineTo(x,T0+ph);c.stroke();c.fillText(l,x,T0+ph+5*d)}
+ S.geo={L0,pw,T0,ph,W,d};return{c,W,L0,T0,pw,ph,fx,vy,R0,K}}
+function drawTones(g,d){if(!S.showTones||!S.dom.length)return;const {c,fx,vy,W,L0,R0,T0}=g,used=[];c.font='600 '+(10.5*d)+'px system-ui,sans-serif';c.textBaseline='middle';
+ S.dom.forEach((t,i)=>{const x=fx(t.f),y=vy(t.lvl);c.fillStyle='#ffd24a';c.strokeStyle='#000';c.lineWidth=2*d;c.beginPath();c.arc(x,y,4.5*d,0,7);c.stroke();c.fill();
+  const txt=`${i+1}  ${fmtF(t.f)}  ${t.p.name} ${t.p.cents>=0?'+':''}${t.p.cents}\u00A2`,w=c.measureText(txt).width+10*d,h=16*d;
+  let bx=x+8*d;if(bx+w>W-R0)bx=x-8*d-w;bx=Math.max(L0+2*d,bx);
+  const offs=[-(h+4*d),8*d,-(2*h+6*d),10*d+h,-(3*h+8*d),12*d+2*h];let by=y+offs[0];
+  for(const o of offs){const cy=y+o;if(cy<T0+2*d||cy+h>T0+g.ph-2*d)continue;if(!used.some(r=>bx<r.x+r.w&&bx+w>r.x&&cy<r.y+r.h&&cy+h>r.y)){by=cy;break}}
+  used.push({x:bx,y:by,w,h});c.fillStyle='rgba(0,0,0,.72)';c.fillRect(bx,by,w,h);c.fillStyle='#ffd24a';c.textAlign='left';c.fillText(txt,bx+5*d,by+h/2)})}
+function trackTones(det,now){const used=new Array(det.length).fill(false),HOLD=1500;
+ for(const tr of S.slots){let bi=-1,bd=1e9;det.forEach((d,i)=>{if(used[i])return;const dist=Math.abs(Math.log(d.f/tr.f));if(dist<Math.LN2/12&&dist<bd){bd=dist;bi=i}});
+  if(bi>=0){const d=det[bi];used[bi]=true;tr.f+=0.25*(d.f-tr.f);tr.lvl+=0.2*(d.lvl-tr.lvl);tr.seen=now;tr.hits++}}
+ S.slots=S.slots.filter(tr=>now-tr.seen<HOLD);
+ det.forEach((d,i)=>{if(used[i])return;
+  if(S.slots.length<3)S.slots.push({f:d.f,lvl:d.lvl,seen:now,hits:1});
+  else{let wi=0;S.slots.forEach((t,k)=>{if(t.lvl<S.slots[wi].lvl)wi=k});if(d.lvl>S.slots[wi].lvl+6)S.slots[wi]={f:d.f,lvl:d.lvl,seen:now,hits:1}}});
+ for(let pass=0;pass<2;pass++)for(let i=0;i<S.slots.length-1;i++)if(S.slots[i+1].lvl>S.slots[i].lvl+3){const t=S.slots[i];S.slots[i]=S.slots[i+1];S.slots[i+1]=t}
+ return S.slots.filter(t=>t.hits>=3).map(t=>{if(!t.df||Math.abs(Math.log(t.f/t.df))>0.004)t.df=t.f;if(t.dl==null||Math.abs(t.lvl-t.dl)>0.8)t.dl=Math.round(t.lvl);return{f:t.df,lvl:t.dl,p:pitch(t.df),band:bandOf(t.df)}})}
+function updateDomList(){const el=$('#domList');if(!S.showTones){el.innerHTML='';el.dataset.h='';return}
+ let h='';for(let i=0;i<3;i++){const t=S.dom[i];h+=t?`<div><b>${i+1}</b> ${fmtF(t.f)}, ${t.p.name} ${t.p.cents>=0?'+':''}${t.p.cents}\u00A2, ${t.lvl.toFixed(0)} ${wlab()}</div>`:`<div><b>${i+1}</b> -</div>`}
+ if(el.dataset.h===h)return;el.dataset.h=h;el.innerHTML=h;el.style.fontSize='';let f=13;while(el.scrollWidth>el.clientWidth+1&&f>9){f-=0.5;el.style.fontSize=f+'px'}}
+function specUnit(g,d){const c=g.c;c.font=(10*d)+'px system-ui,sans-serif';c.fillStyle=SC().text;c.textAlign='right';c.textBaseline='bottom';c.fillText(({A:'dB-A',C:'dB-C',Z:'dB'})[S.weight],g.L0-3*d,g.T0-8*d)}
+function scanFeedback(now){
+ if(now-S.audioT<2500)return [];
+ const bw=S.fs/NF,P=S.pwSm,cum=S.cum,kMin=Math.max(8,Math.ceil(80/bw)),kMax=Math.min(NF/2-6,Math.floor(12000/bw)),ratio=Math.pow(2,1/3),cand=[];
+ for(let k=kMin;k<=kMax;k++){const v=P[k];if(!(v>P[k-1]&&v>=P[k+1]))continue;
+  const w=Math.max(12,Math.round(k*(ratio-1))),k0=Math.max(1,k-w),k1=Math.min(NF/2-1,k+w),cnt=(k1-k0+1)-9;if(cnt<8)continue;
+  const mean=((cum[k1+1]-cum[k0])-(cum[k+5]-cum[k-4]))/cnt,prom=10*Math.log10(v/(mean+1e-30));if(prom<12)continue;
+  const db=10*Math.log10(2*v/(NF*Sw2)+1e-30)+S.cal;if(db<30)continue;
+  const a=Math.log(P[k-1]+1e-30),b=Math.log(v+1e-30),c=Math.log(P[k+1]+1e-30),den=a-2*b+c;let dl=den<0?0.5*(a-c)/den:0;dl=Math.max(-0.5,Math.min(0.5,dl));
+  cand.push({k,f:(k+dl)*bw,db,prom})}
+ const used=new Array(cand.length).fill(false);
+ for(const t of S.fbTracks){let bi=-1,bd=1e9;cand.forEach((c,i)=>{if(used[i])return;const d=Math.abs(c.f-t.f);if(d<=Math.max(2*bw,0.02*t.f)&&d<bd){bd=d;bi=i}});
+  if(bi>=0){const c=cand[bi];used[bi]=true;t.f+=0.3*(c.f-t.f);t.k=c.k;t.s.push({t:now,db:c.db,prom:c.prom});t.last=now}}
+ S.fbTracks=S.fbTracks.filter(t=>now-t.last<700);
+ cand.forEach((c,i)=>{if(!used[i]&&S.fbTracks.length<12)S.fbTracks.push({f:c.f,k:c.k,first:now,last:now,s:[{t:now,db:c.db,prom:c.prom}],flag:0})});
+ const isH=(a,b)=>[2,3,4,5,6].some(n=>Math.abs(b-n*a)<=Math.max(2*bw,0.03*b));
+ const maxPow=f=>{const k=Math.round(f/bw);if(k<3||k>NF/2-3)return 0;let m=0;for(let j=k-2;j<=k+2;j++)if(P[j]>m)m=P[j];return m};
+ const flags=[];
+ for(const t of S.fbTracks){t.s=t.s.filter(x=>now-x.t<2500);const dur=(t.last-t.first)/1000,rec=t.s.filter(x=>now-x.t<1500);if(rec.length<3)continue;
+  let slope=0;if(rec.length>=5){let n=0,sx=0,sy=0,sxx=0,sxy=0;for(const x of rec){const tt=(x.t-rec[0].t)/1000;n++;sx+=tt;sy+=x.db;sxx+=tt*tt;sxy+=tt*x.db}const den=n*sxx-sx*sx;slope=den>0?(n*sxy-sx*sy)/den:0}
+  const prom=rec.reduce((a,x)=>a+x.prom,0)/rec.length,p0=P[t.k]||1e-30,harm=Math.max(maxPow(2*t.f),maxPow(3*t.f))/p0>0.0158||cand.some(c=>Math.abs(c.f-t.f)>2*bw&&(isH(c.f,t.f)||isH(t.f,c.f)));
+  let status=0;if(prom>=12&&dur>=0.6&&slope>=4)status=1;if(prom>=18&&dur>=2&&slope>-1.5&&!harm)status=2;
+  if(t.flag===2&&prom>=12&&slope>-3&&!harm)status=2;t.flag=status;
+  if(status)flags.push({f:t.f,status,slope,prom,db:rec[rec.length-1].db})}
+ flags.sort((a,b)=>b.status-a.status||b.prom-a.prom);return flags.slice(0,4)}
+function updateFbLine(){const el=$('#fbLine');if(!S.showFb){el.style.display='none';el.dataset.h='';return}el.style.display='block';
+ let h,cls;if(!S.fb.length){h='Feedback: none detected';cls='fb-ok'}else{const bad=S.fb.some(t=>t.status===2);cls=bad?'fb-bad':'fb-warn';h=(bad?'Feedback likely: ':'Feedback building: ')+S.fb.map(t=>fmtF(t.f)+(t.status===1?' \u2191':'')).join(', ')}
+ if(el.dataset.h===h)return;el.dataset.h=h;el.className=cls;el.textContent=h;el.style.fontSize='';let f=13;while(el.scrollWidth>el.clientWidth+1&&f>9){f-=0.5;el.style.fontSize=f+'px'}}
+function drawFeedback(g,d){if(!S.showFb||!S.fb.length)return;const {c,fx,L0,T0,pw,ph}=g;c.save();c.beginPath();c.rect(L0,T0,pw,ph);c.clip();
+ S.fb.forEach(t=>{const x=fx(t.f);c.strokeStyle=t.status===2?'#ff4d4d':'#ffb020';c.lineWidth=2*d;c.setLineDash([6*d,4*d]);c.beginPath();c.moveTo(x,T0);c.lineTo(x,T0+ph);c.stroke()});c.setLineDash([]);c.restore();
+ c.font='700 '+(10.5*d)+'px system-ui,sans-serif';c.textBaseline='middle';
+ S.fb.forEach((t,i)=>{const x=fx(t.f),txt='FB '+fmtF(t.f),w=c.measureText(txt).width+10*d,h=16*d;let bx=Math.max(L0+2*d,Math.min(L0+pw-w-2*d,x-w/2));const by=T0+ph-h-6*d-i*(h+3*d);
+  c.fillStyle=t.status===2?'#ff4d4d':'#ffb020';c.fillRect(bx,by,w,h);c.fillStyle='#1a0f00';c.textAlign='center';c.fillText(txt,bx+w/2,by+h/2)})}
+function curLevel(f){return specMode==='line'?specVal(f):lineVal(f,null,barN())}
+function drawCursor(g,d){if(!S.cursor){S.callRect=null;return}const {c,fx,vy,L0,T0,pw,ph}=g,f=S.cursor.f,x=fx(f),lv=curLevel(f);
+ const K=SC();c.save();c.beginPath();c.rect(L0,T0,pw,ph);c.clip();c.strokeStyle=K.cursor;c.lineWidth=1.5*d;c.setLineDash([]);c.beginPath();c.moveTo(x,T0);c.lineTo(x,T0+ph);c.stroke();
+ c.fillStyle=K.cursor;c.strokeStyle=K.cursorEdge;c.lineWidth=2*d;c.beginPath();c.arc(x,vy(lv),4.5*d,0,7);c.stroke();c.fill();c.restore();
+ const p=pitch(f),l1=`${fmtF(f)}  ${p.name} ${p.cents>=0?'+':''}${p.cents}\u00A2`,l2=`${lv.toFixed(1)} ${wlab()}`;
+ c.font='600 '+(12*d)+'px system-ui,sans-serif';const w=Math.max(c.measureText(l1).width,c.measureText(l2).width)+32*d,h=38*d;
+ let bx=x+10*d;if(bx+w>L0+pw)bx=x-10*d-w;bx=Math.max(L0+2*d,bx);const by=T0+6*d;
+ c.fillStyle='rgba(8,9,11,.92)';c.fillRect(bx,by,w,h);c.strokeStyle='#fff';c.lineWidth=d;c.strokeRect(bx,by,w,h);
+ c.textAlign='left';c.textBaseline='middle';c.fillStyle='#fff';c.fillText(l1,bx+7*d,by+11*d);c.fillStyle='#ffd24a';c.fillText(l2,bx+7*d,by+27*d);
+ c.fillStyle='#9aa0a8';c.textAlign='right';c.fillText('\u00D7',bx+w-6*d,by+11*d);S.callRect={x:bx,y:by,w,h}}
+function drawSpec(now){const cv=$('#specCv'),d=sizeCv(cv);if(!d)return;buildCum();if(S.showPk)updatePk();
+ if(!now||now-S.domT>150){S.domT=now||0;const pn=performance.now();
+  S.dom=S.showTones?trackTones(findDominant(),pn):[];S.fb=S.showFb?scanFeedback(pn):[];if(!S.showFb)S.fbTracks=[];S.f0=S.showF0?trackF0(findF0(),pn):[];if(!S.showF0)S.f0t=[];
+  if(!now||now-S.domUi>400){S.domUi=now||0;updateDomList();updateFbLine();updatePkLine();updateF0Line()}}
+ const g=specFrame(cv,d),{c,fx,vy,L0,T0,pw,ph}=g;
+ c.save();c.beginPath();c.rect(L0,T0,pw,ph);c.clip();
+ if(specMode==='bars'){
+  const NB=barN(),fcs=barCentres(NB);if(S.bK!==NB){S.bK=NB;S.bPk=new Float32Array(fcs.length).fill(-Infinity);S.bPkT=new Float64Array(fcs.length)}
+  const base=vy(0);
+  fcs.forEach((f,i)=>{const v=lineVal(f,null,NB),x0=fx(f*Math.pow(2,-0.45/NB)),x1=fx(f*Math.pow(2,0.45/NB)),y=vy(v);c.fillStyle=g.K.bar;c.fillRect(x0,y,Math.max(1,x1-x0),base-y);
+   if(S.showPk){peakStep(S.bPk,S.bPkT,i,v,S.pkNow,S.pkDt);if(S.bPk[i]>0){c.fillStyle='#f2a93b';c.fillRect(x0,vy(S.bPk[i])-d,Math.max(1,x1-x0),2*d)}}});
+ }else{
+  const n=Math.max(2,Math.floor(pw/d/1.5));c.strokeStyle=g.K.line;c.lineWidth=2*d;c.lineJoin='round';c.beginPath();let first=true;const xs=[];
+  for(let i=0;i<=n;i++){const f=XMIN*Math.exp(LNR*i/n);if(f<20||f>20000)continue;const x=fx(f),y=vy(S.res==='fft'?binVal(f,XMIN*Math.exp(LNR*(i+1)/n)):lineVal(f,null,S.res));xs.push(x);if(first){c.moveTo(x,y);first=false}else c.lineTo(x,y)}
+  c.stroke();c.lineTo(xs[xs.length-1],T0+ph);c.lineTo(xs[0],T0+ph);c.closePath();c.fillStyle=g.K.fill;c.fill()}
+ if(S.showPk&&isFinite(S.pkMax.v)){c.strokeStyle='#f2a93b';c.lineWidth=1.5*d;c.beginPath();let on=false;for(let i=0;i<PKN;i++){const v=S.pkArr[i];if(!isFinite(v))continue;const x=fx(PKF[i]),y=vy(v);if(on)c.lineTo(x,y);else{c.moveTo(x,y);on=true}}c.stroke();
+  c.fillStyle='#f2a93b';c.beginPath();c.arc(fx(S.pkMax.f),vy(S.pkMax.v),4*d,0,7);c.fill()}
+ c.restore();drawFeedback(g,d);drawF0(g,d);drawTones(g,d);drawCursor(g,d);specUnit(g,d)}
+const specCv=$('#specCv');specCv.style.touchAction=S.showCursor?'pan-y':'auto';
+function evF(e){const r=specCv.getBoundingClientRect(),g=S.geo;if(!g)return null;const px=(e.clientX-r.left)/r.width*specCv.width;return XMIN*Math.exp(Math.min(1,Math.max(0,(px-g.L0)/g.pw))*LNR)}
+function setCursor(f){S.cursor=f==null?null:{f};
+ if(f!=null){drawSpec(-1);const b=bandOf(f);$('#specRead').textContent=`${fmtF(f)}: ${curLevel(f).toFixed(1)} ${wlab()}. ${b.n} (${fmtF(b.lo)} to ${fmtF(b.hi)}): ${b.d}`}else{specNote();drawSpec(-1)}}
+specCv.addEventListener('pointerdown',e=>{if(!S.geo||!S.showCursor)return;const r=specCv.getBoundingClientRect(),cr=S.callRect,px=(e.clientX-r.left)/r.width*specCv.width,py=(e.clientY-r.top)/r.height*specCv.height;
+ if(S.cursor&&cr&&px>=cr.x&&px<=cr.x+cr.w&&py>=cr.y&&py<=cr.y+cr.h){S.drag=false;setCursor(null);return}
+ S.drag=true;try{specCv.setPointerCapture(e.pointerId)}catch{}setCursor(evF(e))});
+specCv.addEventListener('pointermove',e=>{if(S.drag){const f=evF(e);if(f!=null)setCursor(f)}});
+['pointerup','pointercancel','lostpointercapture'].forEach(t=>specCv.addEventListener(t,()=>{S.drag=false}));
+const setTog=(id,key)=>{const b=$(id);b.setAttribute('aria-pressed',S[key]);b.onclick=()=>{S[key]=!S[key];if(key==='showTones')S.slots=[];b.setAttribute('aria-pressed',S[key]);store.set(key==='showFb'?'showFb3':key+'2',S[key]);if(key==='showFb'){S.fb=[];S.fbTracks=[]}if(key==='showPk'){resetPk();updatePkLine()}if(key==='showF0'){S.f0t=[];S.f0=[];updateF0Line()}if(key==='showWf'){S.wfNeedClear=true;applyLayout()}if(key==='showCursor'){S.cursor=null;S.callRect=null;S.drag=false;specCv.style.touchAction=S[key]?'pan-y':'auto';specNote()}drawSpec(0)}};
+setTog('#btnBands','showBands');setTog('#btnTones','showTones');setTog('#btnFb','showFb');setTog('#btnPk','showPk');setTog('#btnF0','showF0');setTog('#btnWf','showWf');setTog('#btnCursor','showCursor');
+const ICON_PAUSE=`<svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>`,ICON_PLAY='<svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>';
+$('#btnMode').onclick=()=>{specMode=specMode==='line'?'bars':'line';store.set('specMode',specMode);specNote();drawSpec()};
+$('#btnArr').onclick=()=>{document.body.classList.add('arr');document.querySelector('nav.tabs button[data-tab="live"]').click();applyLayout()};
+$('#btnArrDone').onclick=()=>{document.body.classList.remove('arr');applyLayout()};
+specNote();
+
+/* ---------- targets ---------- */
+const AS_REF='AS/NZS 2107:2016, Table 1';
+const myTargets=()=>store.get('myTargets',[]);
+const isAS=t=>/2107/.test((t.ref||'')+' '+(t.name||''));
+function limStr(t){const r=(mn,mx,u)=>mn!=null&&mx!=null?`${mn} to ${mx} ${u}`:mx!=null?`up to ${mx} ${u}`:mn!=null?`at least ${mn} ${u}`:null;
+ const a=r(t.rtMin,t.rtMax,'s'),b=r(t.nzMin,t.nzMax,'dB(A)');return [a&&'RT60 '+a,b&&'background noise (LAeq) '+b].filter(Boolean).join('; ')||'no numeric limits entered'}
+const rng=(mn,mx,u)=>mn!=null&&mx!=null?` (range ${mn} to ${mx} ${u})`:mx!=null?` (max ${mx} ${u})`:mn!=null?` (min ${mn} ${u})`:'';
+function buildPresetSelect(){const sel=$('#selPreset'),cur=sel.value,mine=myTargets(),o=(v,n)=>`<option value="${esc(v)}">${esc(n)}</option>`;
+ sel.innerHTML=`<optgroup label="AS/NZS 2107:2016 (Table 1)">${o('as_board','Boardroom and conference rooms')}${o('as_video','Video/audio conference rooms')}</optgroup>`+
+  (mine.length?`<optgroup label="My saved rows">${mine.map(m=>o('my:'+m.id,m.name)).join('')}</optgroup>`:'')+
+  `<optgroup label="ANSI/ASA S12.60 (classrooms)">${o('s1260a','Classroom under 283 m³')}${o('s1260b','Classroom 283 to 566 m³')}${o('s1260c','Core learning space over 566 m³')}</optgroup>`+
+  `<optgroup label="Other">${o('custom','Custom / enter a Table 1 row')}</optgroup>`;
+ if(cur&&[...sel.options].some(x=>x.value===cur))sel.value=cur}
+function target(){const v=$('#selPreset').value;if(PRESETS[v])return PRESETS[v];
+ if(v.startsWith('my:')){const m=myTargets().find(x=>'my:'+x.id===v);if(m)return{name:m.name,ref:m.ref||'(not stated)',rtMin:m.rtMin,rtMax:m.rtMax,nzMin:m.nzMin,nzMax:m.nzMax}}
+ const n=id=>{const x=$(id).value;return x===''?null:+x};
+ return{name:$('#cName').value.trim()||'Custom target',ref:$('#cRef').value||'(not stated)',rtMin:n('#cRtMin'),rtMax:n('#cRtMax'),nzMin:n('#cNzMin'),nzMax:n('#cNzMax')}}
+const PRESET_FIELDS=['#cName','#cRtMin','#cRtMax','#cNzMin','#cNzMax','#cRef'];
+function savePreset(){store.set('preset',{v:$('#selPreset').value,c:PRESET_FIELDS.map(i=>$(i).value)})}
+buildPresetSelect();
+(function(){const p=store.get('preset',null);if(p){if([...$('#selPreset').options].some(o=>o.value===p.v))$('#selPreset').value=p.v;PRESET_FIELDS.forEach((id,i)=>$(id).value=(p.c&&p.c[i])||'')}})();
+function presetUi(){const v=$('#selPreset').value,t=target();$('#customBox').style.display=v==='custom'?'block':'none';$('#btnDelTgt').style.display=v.startsWith('my:')?'inline-block':'none';
+ let note=v==='custom'?'':`Limits used: ${limStr(t)}. Source: ${t.ref}.`;
+ if(v!=='custom'&&isAS(t))note+=' Noise is compared as LAeq against the lower and upper design levels; RT60 as the average of the 500 Hz and 1 kHz octave bands.';
+ $('#presetNote').textContent=note}
+$$('#selPreset,'+PRESET_FIELDS.join(',')).forEach(e=>e.addEventListener('input',()=>{savePreset();presetUi();renderIR();renderNoise()}));presetUi();
+$('#btnSaveTgt').onclick=()=>{if($('#selPreset').value!=='custom')return;const t=target(),name=$('#cName').value.trim();
+ if(!name)return toast('Enter the space type first.');if(t.rtMin==null&&t.rtMax==null&&t.nzMin==null&&t.nzMax==null)return toast('Enter at least one limit.');
+ const list=myTargets(),id=Date.now().toString(36);list.push({id,name,ref:$('#cRef').value||AS_REF,rtMin:t.rtMin,rtMax:t.rtMax,nzMin:t.nzMin,nzMax:t.nzMax});store.set('myTargets',list);
+ buildPresetSelect();$('#selPreset').value='my:'+id;savePreset();presetUi();renderIR();renderNoise();toast('Saved. It now appears under "My saved rows".')};
+$('#btnDelTgt').onclick=()=>{const v=$('#selPreset').value;if(!v.startsWith('my:')||!confirm('Delete this saved row?'))return;
+ store.set('myTargets',myTargets().filter(x=>'my:'+x.id!==v));buildPresetSelect();$('#selPreset').value='as_board';savePreset();presetUi();renderIR();renderNoise()};
+function judge(v,min,max){if(v==null||!isFinite(v))return['na','n/a'];if(max==null&&min==null)return['na','No limit'];
+ if(max!=null&&v>max)return['fail',min!=null?'Above range':'Above limit'];if(min!=null&&v<min)return['warn','Below range'];return['pass',min!=null?'Within range':'Within limit']}
+
+/* ---------- noise test ---------- */
+const NZ={running:false,dur:30,acc:null,n:0,seg:null,t0:0,res:null};
+function noiseAccumulate(){const el=(performance.now()-NZ.t0)/1000;if(el>=NZ.dur){finishNoise();return}
+ const sg=Math.min(4,Math.floor(el/NZ.dur*5));for(let i=0;i<31;i++){NZ.acc[i]+=S.band[i];NZ.seg[sg][i]+=S.band[i]}NZ.n++;NZ.segN[sg]++;$('#noiseProg').style.width=(el/NZ.dur*100)+'%'}
+$('#btnNoise').onclick=async()=>{if(NZ.running)return finishNoise(true);if(!S.running&&!(await ensureAudio()))return;
+ NZ.dur=+$('#selDur').value;NZ.acc=new Float64Array(31);NZ.n=0;NZ.seg=Array.from({length:5},()=>new Float64Array(31));NZ.segN=[0,0,0,0,0];NZ.t0=performance.now();NZ.running=true;WFR.mode='noise';WFR.rows=[];WFR.last=0;REC.noise=true;REC.chunks=[];procOn(true);$('#btnNoise').textContent='Cancel';$('#noiseOut').textContent='Measuring... stay quiet.'};
+const laeqFrom=(acc,n)=>{let s=0;for(let i=0;i<31;i++)s+=(acc[i]/n)*Math.pow(10,wA(TH3[i])/10);return 10*Math.log10(s+1e-20)+S.cal};
+function finishNoise(cancel){NZ.running=false;const wfRows=WFR.rows;WFR.mode=null;const recCh=REC.chunks;REC.noise=false;REC.chunks=[];procOn(IRc.state==='armed'||IRc.state==='post');$('#btnNoise').textContent='Start noise test';$('#noiseProg').style.width=cancel?'0':'100%';
+ if(cancel||NZ.n<5){if(cancel)$('#noiseOut').textContent='Cancelled.';return}
+ const segs=NZ.seg.map((a,i)=>NZ.segN[i]?laeqFrom(a,NZ.segN[i]):null).filter(x=>x!=null);
+ const oct={};OCT_IR.concat([63]).forEach(fc=>{const i=TH3.indexOf(fc);let s=0;for(let k=i-1;k<=i+1;k++)s+=NZ.acc[k]/NZ.n;oct[fc]=10*Math.log10(s+1e-20)+S.cal});
+ NZ.res={laeq:laeqFrom(NZ.acc,NZ.n),spread:Math.max(...segs)-Math.min(...segs),oct,dur:NZ.dur,calibrated:S.calibrated,when:new Date()};NZ.res.wf=wfRows;NZ.res.pcm=toPcm(recCh);NZ.res.fs=S.fs;
+ renderNoise()}
+function renderNoise(){const r=NZ.res;if(!r)return;const t=target(),[cls,txt]=judge(r.laeq,t.nzMin,t.nzMax);
+ $('#noiseOut').innerHTML=`<div style="font-size:15px;color:var(--text)"><b style="font-size:26px;color:var(--lcd)">${r.laeq.toFixed(1)}</b> dB(A) LAeq over ${r.dur} s <span class="badge ${cls}">${txt}${rng(t.nzMin,t.nzMax,'dB(A)')}</span></div>
+ <div>Steadiness: ${r.spread.toFixed(1)} dB spread across five segments ${r.spread<=3?'(steady)':'(not steady: noise changed during the test, consider repeating)'}. ${r.calibrated?'':'Uncalibrated.'} Values near or below ~35 dB(A) are close to a phone microphone's own noise floor.</div>`;
+ const cv=$('#noiseCv');cv.style.display='block';const d=sizeCv(cv);if(d)drawBandChart(cv,d,Object.keys(r.oct).map(Number),Object.values(r.oct),noiseChartOpts());}
+const noiseChartOpts=(th)=>({th,xmin:44,xmax:11300,ymin:0,ymax:NZ.res?Math.max(80,Math.ceil((Math.max(...Object.values(NZ.res.oct))+12)/20)*20):80,ystep:20,ticks:[63,125,250,500,1000,2000,4000,8000],bw:0.8,ytitle:'Octave band level, dB (unweighted)',labels:v=>v.toFixed(0)});
+
+/* ---------- impulse capture ---------- */
+const IRc={state:'idle',pre:[],preLen:0,bg:0,n:0,data:[],trig:0,len:0,peak:0};
+const IR={caps:[]};
+function onProc(e){if(REC.noise)REC.chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));const c=IRc;if(c.state!=='armed'&&c.state!=='post')return;
+ const x=new Float32Array(e.inputBuffer.getChannelData(0));let pk=0,ss=0;for(let i=0;i<x.length;i++){const a=Math.abs(x[i]);if(a>pk)pk=a;ss+=x[i]*x[i]}const rms=Math.sqrt(ss/x.length);
+ if(c.state==='armed'){c.n++;const thr=Math.max(0.03,10*c.bg);
+  if(c.n>4&&pk>thr){let i0=0;while(Math.abs(x[i0])<=thr)i0++;c.data=[...c.pre,x];c.trig=c.preLen+i0;c.len=c.preLen+x.length;c.peak=pk;c.state='post';return}
+  c.bg=c.n===1?rms:0.9*c.bg+0.1*rms;c.pre.push(x);c.preLen+=x.length;while(c.pre.length>1&&c.preLen-c.pre[0].length>=S.fs*1.0){c.preLen-=c.pre.shift().length}}
+ else{c.data.push(x);c.len+=x.length;if(pk>c.peak)c.peak=pk;if(c.len-c.trig>=S.fs*5){c.state='done';finishCapture()}}}
+$('#btnArm').onclick=async()=>{if(IRc.state==='armed'||IRc.state==='post')return cancelArm();if(!S.running&&!(await ensureAudio()))return;
+ Object.assign(IRc,{state:'armed',pre:[],preLen:0,bg:0,n:0,data:[],trig:0,len:0,peak:0,wf:null});WFR.ring=[];procOn(true);$('#btnArm').textContent='Cancel';$('#irState').className='badge warn';$('#irState').textContent='Listening';
+ clearTimeout(IRc.to);IRc.to=setTimeout(()=>{if(IRc.state==='armed'){cancelArm();toast('No impulse heard in 20 s. Try a louder impulse.')}},20000)};
+function cancelArm(){IRc.state='idle';procOn(REC.noise);clearTimeout(IRc.to);$('#btnArm').textContent='Arm';$('#irState').className='badge na';$('#irState').textContent='Idle'}
+$('#btnIrClear').onclick=()=>{IR.caps=[];renderIR()};
+function bandpass(x,fs,fc){const w0=2*Math.PI*fc/fs,al=Math.sin(w0)*Math.sinh(Math.LN2/2*w0/Math.sin(w0)),a0=1+al,b0=al/a0,b2=-al/a0,a1=-2*Math.cos(w0)/a0,a2=(1-al)/a0;
+ let y=new Float64Array(x);for(let p=0;p<2;p++){let x1=0,x2=0,y1=0,y2=0;const o=new Float64Array(y.length);for(let i=0;i<y.length;i++){const v=y[i],r=b0*v+b2*x2-a1*y1-a2*y2;x2=x1;x1=v;y2=y1;y1=r;o[i]=r}y=o}return y}
+function slopeT(edc,fs,hi,lo){let i1=-1,i2=-1;for(let i=0;i<edc.length;i++){if(i1<0&&edc[i]<=-lo)i1=i;if(edc[i]>=-hi)i2=i}
+ if(i1<0||i2<0||i2-i1<8)return null;let n=0,sx=0,sy=0,sxx=0,sxy=0;for(let i=i1;i<=i2;i++){const t=i/fs,y=edc[i];n++;sx+=t;sy+=y;sxx+=t*t;sxy+=t*y}
+ const m=(n*sxy-sx*sy)/(n*sxx-sx*sx);return m<0?-60/m:null}
+function analyseBand(x,fs,fc,trig,pkIdx){const y=bandpass(x,fs,fc);
+ const preEnd=Math.max(0,trig-Math.round(0.02*fs));let nf=0,cnt=0;
+ if(preEnd>0.15*fs){for(let i=0;i<preEnd;i++){nf+=y[i]*y[i];cnt++}}else{const s=Math.round(y.length*0.85);for(let i=s;i<y.length;i++){nf+=y[i]*y[i];cnt++}}nf=nf/Math.max(cnt,1);
+ const len=y.length-pkIdx,e=new Float64Array(len);for(let i=0;i<len;i++){const v=y[pkIdx+i];e[i]=v*v}
+ const W=Math.round(0.02*fs),cs=new Float64Array(len+1);for(let i=0;i<len;i++)cs[i+1]=cs[i]+e[i];
+ const env=i=>(cs[Math.min(len,i+W)]-cs[i])/Math.max(1,Math.min(len,i+W)-i);
+ const e0=env(0),dr=nf>0?10*Math.log10(e0/nf):99;let tc=len-1;
+ for(let i=W;i<len-W;i++){if(env(i)<=nf*3.16){tc=i;break}}
+ const edc=new Float64Array(tc+1);let acc=0;for(let i=tc;i>=0;i--){acc+=e[i];edc[i]=acc}const e00=edc[0];for(let i=0;i<=tc;i++)edc[i]=10*Math.log10(edc[i]/e00+1e-30);
+ return{fc,dr,edt:dr>=15?slopeT(edc,fs,10,0):null,t20:dr>=25?slopeT(edc,fs,25,5):null,t30:dr>=45?slopeT(edc,fs,35,5):null}}
+function finishCapture(){cancelArm();const x=new Float32Array(IRc.len);let o=0;for(const c of IRc.data){x.set(c,o);o+=c.length}
+ const fs=S.fs;let pkIdx=IRc.trig,mx=0;for(let i=IRc.trig;i<Math.min(x.length,IRc.trig+Math.round(0.2*fs));i++){const a=Math.abs(x[i]);if(a>mx){mx=a;pkIdx=i}}
+ const bands=OCT_IR.map(fc=>analyseBand(x,fs,fc,IRc.trig,pkIdx));
+ IR.caps.push({when:new Date(),bands,clipped:IRc.peak>=0.99,peakDb:20*Math.log10(IRc.peak)+S.cal,ir:broadbandIR(x,fs,IRc.trig,pkIdx),wf:IRc.wf||[],pcm:toPcm([x]),fs:S.fs});
+ if(IRc.peak>=0.99)toast('That impulse clipped the microphone. Move the source further away and repeat.');renderIR();$('#irState').textContent='Captured'}
+function avgCaps(){if(!IR.caps.length)return null;return OCT_IR.map((fc,i)=>{const f=k=>{const v=IR.caps.map(c=>c.bands[i][k]).filter(z=>z!=null&&isFinite(z));return v.length?v.reduce((a,b)=>a+b)/v.length:null};return{fc,edt:f('edt'),t20:f('t20'),t30:f('t30'),dr:f('dr')}})}
+function tmid(av){if(!av)return null;const pick=b=>b.t20!=null?{v:b.t20,ind:b.dr<35}:b.edt!=null?{v:b.edt,ind:true}:null;const a=pick(av[2]),b=pick(av[3]);if(!a||!b)return null;return{v:(a.v+b.v)/2,ind:a.ind||b.ind||av[2].t20==null||av[3].t20==null}}
+function renderIR(){const av=avgCaps(),t=target();
+ $('#irList').innerHTML=IR.caps.length?IR.caps.map((c,i)=>`Capture ${i+1}, ${c.when.toLocaleTimeString('en-AU')}${c.clipped?' <span class="badge fail">clipped</span>':''}`).join('<br>'):'No captures yet.';
+ {const c2=$('#irTimeCv'),d2=sizeCv(c2);if(d2)drawIRTime(c2,d2,IR.caps)}
+ if(!av){$('#irSummary').textContent='Capture at least one impulse.';$('#irTbl').innerHTML='';const cv=$('#irCv'),d=sizeCv(cv);if(d)drawBandChart(cv,d,[],[],irChartOpts(null,t));return}
+ const tm=tmid(av),[cls,txt]=tm?judge(tm.v,t.rtMin,t.rtMax):['na','n/a'];
+ $('#irSummary').innerHTML=`<div style="font-size:15px;color:var(--text)">RT60 (mid, average of 500 Hz and 1 kHz): <b style="font-size:26px;color:var(--lcd)">${tm?tm.v.toFixed(2)+' s':'not available'}</b> ${tm?`<span class="badge ${cls}">${txt}${rng(t.rtMin,t.rtMax,'s')}</span>`:''}</div>
+ <div>${IR.caps.length} capture${IR.caps.length>1?'s':''} averaged. ${tm&&tm.ind?'Indicative only: the decay range was too small for a reliable T20 in the mid bands.':''} Target: ${esc(t.name)}${t.ref&&t.ref!=='(not stated)'?' ('+esc(t.ref)+')':''}.</div>`;
+ $('#irTbl').innerHTML=av.map(b=>{const f=b.dr==null?'':b.dr<25?['fail','Too noisy']:b.dr<35?['warn','Low confidence']:['pass','Good'];return`<tr><td>${b.fc>=1000?b.fc/1000+' kHz':b.fc+' Hz'}</td><td>${b.t20!=null?b.t20.toFixed(2):'-'}</td><td>${b.edt!=null?b.edt.toFixed(2):'-'}</td><td>${b.dr!=null?b.dr.toFixed(0):'-'}</td><td>${f?`<span class="badge ${f[0]}">${f[1]}</span>`:''}</td></tr>`}).join('');
+ const cv=$('#irCv'),d=sizeCv(cv);if(d)drawBandChart(cv,d,OCT_IR,av.map(b=>b.t20??b.edt),irChartOpts(av,t))}
+const irChartOpts=(av,t,th)=>{const vals=av?av.map(b=>b.t20??b.edt).filter(v=>v!=null):[];const mx=Math.max(1,t.rtMax||0,...vals)*1.2;return{th,xmin:88,xmax:11300,ymin:0,ymax:Math.ceil(mx*5)/5,ystep:Math.max(0.2,Math.round(mx/5*10)/10),ticks:OCT_IR,bw:0.8,ytitle:'RT60 (T20, EDT where T20 unavailable), s',labels:v=>v.toFixed(2),target:t.rtMax,targetLabel:t.rtMax!=null?(t.rtMin!=null?t.rtMin+' to '+t.rtMax+' s':'max '+t.rtMax+' s'):''}};
+window.addEventListener('resize',()=>{renderIR();renderNoise()});
+
+/* ---------- report ---------- */
+let photos=[],confirmedAt=null;
+function addPhotos(files){[...files].forEach(f=>{const img=new Image,r=new FileReader;r.onload=()=>{img.onload=()=>{const m=1000,k=Math.min(1,m/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=img.width*k;c.height=img.height*k;c.getContext('2d').drawImage(img,0,0,c.width,c.height);photos.push(c.toDataURL('image/jpeg',0.8));renderPhotos();unconfirm()};img.src=r.result};r.readAsDataURL(f)})}
+function renderPhotos(){$('#photoList').innerHTML=photos.map((p,i)=>`<div><img src="${p}" alt="Site photo ${i+1}"><button data-i="${i}" aria-label="Remove photo">×</button></div>`).join('');$$('#photoList button').forEach(b=>b.onclick=()=>{photos.splice(+b.dataset.i,1);renderPhotos();unconfirm()})}
+$('#fCam').onchange=e=>{addPhotos(e.target.files);e.target.value=''};$('#fGal').onchange=e=>{addPhotos(e.target.files);e.target.value=''};
+function setRep(en){['btnPrint','btnShare','btnPdf','btnSharePdf'].forEach(id=>$('#'+id).disabled=!en)}
+function unconfirm(){confirmedAt=null;setRep(false);$('#confState').className='badge na';$('#confState').textContent='Not confirmed'}
+$$('#repForm input[type=text],#repForm input:not([type]),#repForm textarea').forEach(e=>e.addEventListener('input',unconfirm));
+$('#btnGps').onclick=()=>{if(!navigator.geolocation)return toast('No GPS in this browser.');$('#gpsNote').textContent='Locating...';
+ navigator.geolocation.getCurrentPosition(async p=>{const la=p.coords.latitude,lo=p.coords.longitude;let a=`${la.toFixed(5)}, ${lo.toFixed(5)}`;
+  try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${la}&lon=${lo}`);const j=await r.json();if(j.display_name)a=j.display_name}catch{}
+  $('#fAddr').value=a;$('#gpsNote').textContent=`GPS accuracy about ${Math.round(p.coords.accuracy)} m. Check the address, then confirm.`;unconfirm()},
+  e=>{$('#gpsNote').textContent='GPS failed: '+e.message},{enableHighAccuracy:true,timeout:15000})};
+const SYS={model:'',brand:'',marketing:'',os:'',chrome:''};
+const sysText=()=>[SYS.chrome?'Chrome '+SYS.chrome.split('.')[0]:'Chrome',SYS.os,'Web Audio'].filter(Boolean).join(', ');
+const SAMSUNG=Object.fromEntries(('S942 Galaxy S26|S947 Galaxy S26+|S948 Galaxy S26 Ultra|S931 Galaxy S25|S936 Galaxy S25+|S937 Galaxy S25 Edge|S938 Galaxy S25 Ultra|S731 Galaxy S25 FE|'+
+ 'S921 Galaxy S24|S926 Galaxy S24+|S928 Galaxy S24 Ultra|S721 Galaxy S24 FE|S911 Galaxy S23|S916 Galaxy S23+|S918 Galaxy S23 Ultra|S711 Galaxy S23 FE|S901 Galaxy S22|S906 Galaxy S22+|S908 Galaxy S22 Ultra|'+
+ 'G991 Galaxy S21|G996 Galaxy S21+|G998 Galaxy S21 Ultra|G990 Galaxy S21 FE|G980 Galaxy S20|G981 Galaxy S20|G985 Galaxy S20+|G986 Galaxy S20+|G988 Galaxy S20 Ultra|G780 Galaxy S20 FE|G781 Galaxy S20 FE|'+
+ 'G970 Galaxy S10e|G973 Galaxy S10|G975 Galaxy S10+|G977 Galaxy S10 5G|G960 Galaxy S9|G965 Galaxy S9+|G950 Galaxy S8|G955 Galaxy S8+|'+
+ 'N980 Galaxy Note20|N981 Galaxy Note20|N985 Galaxy Note20 Ultra|N986 Galaxy Note20 Ultra|N970 Galaxy Note10|N971 Galaxy Note10 5G|N975 Galaxy Note10+|N976 Galaxy Note10+ 5G|N960 Galaxy Note9|'+
+ 'F966 Galaxy Z Fold7|F766 Galaxy Z Flip7|F761 Galaxy Z Flip7 FE|F956 Galaxy Z Fold6|F741 Galaxy Z Flip6|F946 Galaxy Z Fold5|F731 Galaxy Z Flip5|F936 Galaxy Z Fold4|F721 Galaxy Z Flip4|F926 Galaxy Z Fold3|F711 Galaxy Z Flip3|F916 Galaxy Z Fold2|'+
+ 'A566 Galaxy A56|A556 Galaxy A55|A546 Galaxy A54|A536 Galaxy A53|A366 Galaxy A36|A356 Galaxy A35|A346 Galaxy A34|A336 Galaxy A33|A266 Galaxy A26|A256 Galaxy A25|A245 Galaxy A24|A235 Galaxy A23|'+
+ 'A176 Galaxy A17 5G|A175 Galaxy A17|A166 Galaxy A16 5G|A165 Galaxy A16|A156 Galaxy A15 5G|A155 Galaxy A15|A146 Galaxy A14 5G|A145 Galaxy A14|A136 Galaxy A13 5G|A135 Galaxy A13|A075 Galaxy A07|A065 Galaxy A06|'+
+ 'A736 Galaxy A73 5G|A725 Galaxy A72|A715 Galaxy A71|A716 Galaxy A71 5G|A526 Galaxy A52 5G|A525 Galaxy A52|A528 Galaxy A52s 5G|A515 Galaxy A51|A326 Galaxy A32 5G|A325 Galaxy A32|A226 Galaxy A22 5G|A225 Galaxy A22|A125 Galaxy A12|A115 Galaxy A11|A217 Galaxy A21s|A705 Galaxy A70|A505 Galaxy A50|'+
+ 'X710 Galaxy Tab S9|X716 Galaxy Tab S9|X810 Galaxy Tab S9+|X816 Galaxy Tab S9+|X910 Galaxy Tab S9 Ultra|X916 Galaxy Tab S9 Ultra|X820 Galaxy Tab S10+|X826 Galaxy Tab S10+|X920 Galaxy Tab S10 Ultra|X926 Galaxy Tab S10 Ultra|'+
+ 'X700 Galaxy Tab S8|X706 Galaxy Tab S8|X800 Galaxy Tab S8+|X806 Galaxy Tab S8+|X900 Galaxy Tab S8 Ultra|X906 Galaxy Tab S8 Ultra|T870 Galaxy Tab S7|T875 Galaxy Tab S7|T970 Galaxy Tab S7+|T976 Galaxy Tab S7+|'+
+ 'G766 Galaxy XCover7 Pro|G736 Galaxy XCover6 Pro').split('|').map(x=>[x.slice(0,4),x.slice(5)]));
+function marketingName(model){const m=/^SM-([A-Z]\d{3})/i.exec(model||'');
+ if(m)return{brand:'Samsung',name:SAMSUNG[m[1].toUpperCase()]||''};
+ if(/^Pixel/i.test(model||''))return{brand:'Google',name:model};
+ return{brand:'',name:''}}
+async function detectDevice(force){
+ try{const u=navigator.userAgentData;let h={};if(u)h=await u.getHighEntropyValues(['model','platform','platformVersion','fullVersionList']);
+  const ua=navigator.userAgent;let model=(h.model||'').trim();
+  if(!model){const x=/Android[^;]*;\s*([^;)]+)/.exec(ua);if(x&&x[1].trim()!=='K')model=x[1].trim()}
+  const plat=h.platform||(/Android/.test(ua)?'Android':(navigator.platform||''));
+  let os=plat;if(plat==='Android'){let pv=h.platformVersion||'';if(!pv){const m=/Android ([\d.]+)/.exec(ua);if(m)pv=m[1]}if(pv)os='Android '+pv.split('.')[0]}
+  const fv=(h.fullVersionList||[]).find(b=>/Chrom/.test(b.brand)&&!/Not/i.test(b.brand));
+  SYS.chrome=fv?fv.version:((/Chrome\/([\d.]+)/.exec(ua)||[])[1]||'');SYS.os=os;SYS.model=model;
+  const mk=marketingName(model);SYS.brand=mk.brand;SYS.marketing=mk.name;
+  const label=mk.name?`${mk.brand} ${mk.name}`:[mk.brand,model].filter(Boolean).join(' ');
+  if(force)store.set('rep|fDev2',null);
+  const saved=store.get('rep|fDev2',null);
+  if(!force&&saved&&saved.user&&saved.v)$('#fDev').value=saved.v;else if(label){$('#fDev').value=label;$('#fDev').classList.remove('invalid')}
+  const sw=[os,SYS.chrome?'Chrome '+SYS.chrome.split('.')[0]:''].filter(Boolean).join(', ');
+  $('#devNote').textContent=!model?'The device model could not be read. Chrome only shares it on secure pages such as localhost or https. Please enter it; it is remembered.'
+   :mk.name?`Detected from this phone: ${label} (model code ${model}${sw?'; '+sw:''}). It is remembered and not cleared.`
+   :`Detected model code ${model}${sw?' ('+sw+')':''}, but its marketing name is not in the app's list. Type it once (for example Samsung Galaxy S24) and it is remembered.`;
+ }catch{}}
+detectDevice(false);
+(()=>{['fOp','fSite'].forEach(k=>{const v=store.get('rep|'+k,'');if(v)$('#'+k).value=v})})();
+const REQ=[['fOp','Operator'],['fSite','Site name'],['fAddr','Site address'],['fDev','Device make and model']];
+REQ.forEach(([id])=>$('#'+id).addEventListener('input',()=>$('#'+id).classList.toggle('invalid',!$('#'+id).value.trim())));
+$('#fDev').addEventListener('input',()=>store.set('rep|fDev2',{user:true,v:$('#fDev').value}));
+$('#fOp').addEventListener('input',()=>store.set('rep|fOp',$('#fOp').value));
+$('#btnDetect').onclick=()=>detectDevice(true);
+$('#btnPasteDev').onclick=async()=>{try{let t=((await navigator.clipboard.readText())||'').trim().split(/\r?\n/)[0].slice(0,60);if(!t)return toast('The clipboard is empty. Copy the product name first.');
+ if(SYS.brand&&!t.toLowerCase().startsWith(SYS.brand.toLowerCase()))t=SYS.brand+' '+t;$('#fDev').value=t;$('#fDev').classList.remove('invalid');store.set('rep|fDev2',{user:true,v:t});unconfirm();toast('Device set to '+t)}catch{toast('Clipboard access was blocked. Paste the name into the field by hand.')}};
+$('#fState').addEventListener('change',()=>unconfirm());$('#fIncAudio').addEventListener('change',()=>unconfirm());
+$('#btnConfirm').onclick=()=>{const miss=REQ.filter(([id])=>!$('#'+id).value.trim());REQ.forEach(([id])=>$('#'+id).classList.toggle('invalid',!$('#'+id).value.trim()));if(miss.length){$('#'+miss[0][0]).focus();return toast('Required: '+miss.map(m=>m[1]).join(', ')+'.')}
+ store.set('rep|fOp',$('#fOp').value);store.set('rep|fSite',$('#fSite').value);confirmedAt=new Date();buildReport();setRep(true);$('#confState').className='badge pass';$('#confState').textContent='Confirmed '+confirmedAt.toLocaleTimeString('en-AU');
+ $('#reportDoc').scrollIntoView({behavior:'smooth'})};
+function chartImg(centers,vals,o,w=900,h=380,type='image/png'){const c=document.createElement('canvas');c.width=w;c.height=h;drawBandChart(c,1.5,centers,vals,{...o,th:THEME.print});return c.toDataURL(type,0.92)}
+function buildReport(){const t=target(),av=avgCaps(),tm=tmid(av),nz=NZ.res,when=confirmedAt.toLocaleString('en-AU',{dateStyle:'full',timeStyle:'long'});
+ const rj=tm?judge(tm.v,t.rtMin,t.rtMax):['na','n/a'],nj=nz?judge(nz.laeq,t.nzMin,t.nzMax):['na','n/a'];
+ const limits=limStr(t);
+ let h=`<h1>Indicative Room Acoustic Measurement Report</h1><div class="kv" style="grid-template-columns:150px 1fr;color:#111">
+ <dt style="color:#555">Site</dt><dd>${esc($('#fSite').value)}</dd><dt style="color:#555">Address</dt><dd>${esc($('#fAddr').value).replace(/\n/g,'<br>')||'-'}</dd>
+ <dt style="color:#555">Room / area</dt><dd>${esc($('#fRoom').value)||'-'}</dd><dt style="color:#555">Room state</dt><dd>${esc($('#fState').value)||'Not stated'}</dd><dt style="color:#555">Operator</dt><dd>${esc($('#fOp').value)}</dd>
+ <dt style="color:#555">Date and time</dt><dd>${esc(when)}</dd><dt style="color:#555">Device</dt><dd>${esc($('#fDev').value)||'-'}</dd>
+ <dt style="color:#555">Microphone</dt><dd>${esc($('#fMic').value)||'-'} (${S.calibrated?'calibrated, offset '+S.cal.toFixed(1)+' dB':'uncalibrated'}${esc(fcalNote())})</dd>
+ <dt style="color:#555">Software</dt><dd>Acoustics Meter, Build ${BUILD} (${esc(sysText())})</dd></div>`;
+ h+=`<h2>Target used</h2><p>${esc(t.name)}. Reference: ${esc(t.ref)}. Limits applied: ${esc(limits)}.</p>`+(isAS(t)?`<p style="font-size:12px;color:#444">${esc(AS_NOTE)}</p>`:'');
+ h+=`<h2>Background noise</h2>`;
+ if(nz){h+=`<p><b>${nz.laeq.toFixed(1)} dB(A) LAeq</b> over ${nz.dur} s <span class="badge ${nj[0]}">${nj[1]}</span>. Steadiness spread ${nz.spread.toFixed(1)} dB.</p>
+  <img class="chartimg" alt="Octave band noise levels" src="${chartImg(Object.keys(nz.oct).map(Number),Object.values(nz.oct),noiseChartOpts())}">
+  <table><thead><tr><th>Octave band</th>${Object.keys(nz.oct).map(f=>`<th>${f} Hz</th>`).join('')}</tr></thead><tbody><tr><td>Level dB</td>${Object.values(nz.oct).map(v=>`<td>${v.toFixed(0)}</td>`).join('')}</tr></tbody></table>`}
+ else h+=`<p>Not measured.</p>`;
+ h+=`<h2>Reverberation time</h2>`;
+ if(av){h+=`<p>RT60 (mid, average of 500 Hz and 1 kHz): <b>${tm?tm.v.toFixed(2)+' s':'not available'}</b> <span class="badge ${rj[0]}">${rj[1]}</span>${tm&&tm.ind?' (indicative: limited decay range)':''}. ${IR.caps.length} capture(s) averaged.</p>
+  <img class="chartimg" alt="RT60 versus octave band" src="${chartImg(OCT_IR,av.map(b=>b.t20??b.edt),irChartOpts(av,t))}">
+  <table><thead><tr><th>Band</th><th>T20 s</th><th>EDT s</th><th>Range dB</th></tr></thead><tbody>${av.map(b=>`<tr><td>${b.fc} Hz</td><td>${b.t20!=null?b.t20.toFixed(2):'-'}</td><td>${b.edt!=null?b.edt.toFixed(2):'-'}</td><td>${b.dr!=null?b.dr.toFixed(0):'-'}</td></tr>`).join('')}</tbody></table>
+  <p style="font-size:12px;color:#444">Octave bands 125 Hz to 4 kHz are the usual reporting set for room reverberation (ISO 3382-2), as speech energy sits mainly in these bands. T20 uses the −5 to −25 dB decay slope; EDT uses 0 to −10 dB. 8 kHz is shown for information.</p>`}
+ else h+=`<p>Not measured.</p>`;
+ h+=extraReportHtml();
+ if($('#fNotes').value.trim())h+=`<h2>Notes</h2><p>${esc($('#fNotes').value).replace(/\n/g,'<br>')}</p>`;
+ if(photos.length)h+=`<h2>Photos</h2><div class="photos">${photos.map((p,i)=>`<img src="${p}" alt="Site photo ${i+1}">`).join('')}</div>`;
+ h+=`<h2>Assumptions and processing notes</h2><ul style="font-size:12.5px">${assumptionsList().map(x=>'<li>'+esc(x)+'</li>').join('')}</ul>`;
+ h+=`<h2>Important</h2><div class="disc"><p>This test was not carried out with professional equipment and is for indicative purposes only. If further examination is required, a certified or competent person should be engaged to carry out thorough testing.</p><p>Background sound levels may change in the tested environment if air-conditioning or other building services are activated that were not operating at the time of testing.</p></div>`;
+ $('#reportDoc').innerHTML=h}
+$('#btnPrint').onclick=()=>{buildReport();window.print()};
+$('#btnShare').onclick=async()=>{const av=avgCaps(),tm=tmid(av),nz=NZ.res;
+ const text=`Indicative acoustic report: ${$('#fSite').value}\n${confirmedAt.toLocaleString('en-AU')}\nOperator: ${$('#fOp').value}\n`+(nz?`Background noise: ${nz.laeq.toFixed(1)} dB(A) LAeq\n`:'')+(tm?`RT60 (mid): ${tm.v.toFixed(2)} s\n`:'')+`Indicative only; not measured with professional equipment.`;
+ try{if(navigator.share)await navigator.share({title:'Acoustics Meter report',text});else{await navigator.clipboard.writeText(text);toast('Summary copied to clipboard.')}}catch{}};
+
+/* ---------- clear fields ---------- */
+$('#btnClear').onclick=()=>{if(!confirm('Clear all report fields and photos? Measurements stay.'))return;
+ ['fSite','fAddr','fRoom','fState','fMic','fNotes'].forEach(id=>$('#'+id).value='');REQ.forEach(([id])=>$('#'+id).classList.remove('invalid'));photos=[];renderPhotos();$('#gpsNote').textContent='';
+ store.set('rep|fSite','');unconfirm();$('#reportDoc').innerHTML='<p class="note" style="color:#555">The report appears here after you confirm the details.</p>';toast('Report fields cleared.')};
+
+/* ---------- PDF export (no libraries needed) ---------- */
+const AS_NOTE='Assessed against AS/NZS 2107:2016. Design sound level is an LAeq range with the space unoccupied but ready for occupancy; below the lower level there may be too little masking sound. Reverberation time is compared as the average of the 500 Hz and 1 kHz octave bands. Clause 6 of the Standard defines the formal measurement method; this app performs a short screening measurement only.';
+const DISC1='This test was not carried out with professional equipment and is for indicative purposes only. If further examination is required, a certified or competent person should be engaged to carry out thorough testing.';
+const DISC2='Background sound levels may change in the tested environment if air-conditioning or other building services are activated that were not operating at the time of testing.';
+const loadImg=url=>new Promise(r=>{const i=new Image;i.onload=()=>r(i);i.onerror=()=>r(null);i.src=url});
+const limitsText=limStr;
+async function makePDF(){
+ const t=target(),av=avgCaps(),tm=tmid(av),nz=NZ.res,when=confirmedAt.toLocaleString('en-AU',{dateStyle:'full',timeStyle:'long'});
+ const PWd=595,PHt=842,M=40,CW=PWd-2*M,pages=[],imgs=[];let cs='',y=PHt-M;
+ const clean=x=>String(x??'').replace(/[\u2212\u2013\u2014]/g,'-').replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"').replace(/\u00B3/g,'^3').replace(/\u2265/g,'>=').replace(/\u2264/g,'<=').replace(/[\r\n\t]+/g,' ').replace(/[^\x20-\x7E\xA0-\xFF]/g,'?');
+ const pe=x=>clean(x).replace(/[\\()]/g,'\\$&');
+ const newPage=()=>{pages.push(cs);cs='';y=PHt-M};
+ const ensure=h=>{if(y-h<M+16)newPage()};
+ const put=(x,px,py,size,bold)=>{cs+=`BT /F${bold?2:1} ${size} Tf ${px.toFixed(1)} ${py.toFixed(1)} Td (${pe(x)}) Tj ET\n`};
+ const wrap=(x,size,w)=>{const words=clean(x).split(' '),lines=[],cw=size*0.52;let cur='';for(const wd of words){const nx=cur?cur+' '+wd:wd;if(nx.length*cw>w&&cur){lines.push(cur);cur=wd}else cur=nx}if(cur)lines.push(cur);return lines};
+ const para=(x,size=10,bold=false)=>{for(const l of wrap(x,size,CW)){ensure(size*1.45);put(l,M,y-size,size,bold);y-=size*1.45}};
+ const h2=x=>{ensure(36);y-=10;put(x,M,y-12,12,true);y-=16;cs+=`0.7 G 0.5 w ${M} ${y} m ${PWd-M} ${y} l S 0 G\n`;y-=6};
+ const kv=(k,v)=>{const lines=wrap(v||'-',10,CW-115);ensure(lines.length*14.5);put(k,M,y-10,10,true);lines.forEach((l,i)=>put(l,M+115,y-10-i*14.5,10,false));y-=lines.length*14.5};
+ const row=(cells,xs,bold)=>{ensure(15);cells.forEach((c,i)=>put(c,xs[i],y-10,9.5,bold));y-=15};
+ const addImg=(data,w,h)=>{imgs.push({data,w,h});return imgs.length};
+ const drawImg=(n,x,yTop,dw,dh)=>{cs+=`q ${dw.toFixed(1)} 0 0 ${dh.toFixed(1)} ${x.toFixed(1)} ${(yTop-dh).toFixed(1)} cm /Im${n} Do Q\n`};
+ const chart=(centers,vals,o)=>{const dw=Math.min(430,CW),dh=dw*380/900;ensure(dh+8);drawImg(addImg(atob(chartImg(centers,vals,o,900,380,'image/jpeg').split(',')[1]),900,380),M,y,dw,dh);y-=dh+8};
+ put('Indicative Room Acoustic Measurement Report',M,y-18,17,true);y-=32;
+ kv('Site',$('#fSite').value);kv('Address',$('#fAddr').value);kv('Room / area',$('#fRoom').value);kv('Room state',$('#fState').value||'Not stated');kv('Operator',$('#fOp').value);kv('Date and time',when);kv('Device',$('#fDev').value);
+ kv('Microphone',($('#fMic').value||'-')+' ('+(S.calibrated?'calibrated, offset '+S.cal.toFixed(1)+' dB':'uncalibrated')+fcalNote()+')');kv('Software','Acoustics Meter, Build '+BUILD+' ('+sysText()+')');
+ h2('Target used');para(`${t.name}. Reference: ${t.ref}. Limits applied: ${limitsText(t)}.`);if(isAS(t))para(AS_NOTE,8.5);
+ h2('Background noise');
+ if(nz){const nj=judge(nz.laeq,t.nzMin,t.nzMax);para(`${nz.laeq.toFixed(1)} dB(A) LAeq over ${nz.dur} s - ${nj[1]}. Steadiness spread ${nz.spread.toFixed(1)} dB.`,11,true);
+  chart(Object.keys(nz.oct).map(Number),Object.values(nz.oct),noiseChartOpts());
+  const ks=Object.keys(nz.oct),xs=[M,...ks.map((_,i)=>M+80+i*52)];row(['Octave band',...ks.map(k=>k+' Hz')],xs,true);row(['Level dB',...ks.map(k=>nz.oct[k].toFixed(0))],xs,false)}
+ else para('Not measured.');
+ ensure(300);h2('Reverberation time');
+ if(av){const rj=tm?judge(tm.v,t.rtMin,t.rtMax):['na','n/a'];para(`RT60 (mid, average of 500 Hz and 1 kHz): ${tm?tm.v.toFixed(2)+' s':'not available'} - ${rj[1]}${tm&&tm.ind?' (indicative: limited decay range)':''}. ${IR.caps.length} capture(s) averaged.`,11,true);
+  chart(OCT_IR,av.map(b=>b.t20??b.edt),irChartOpts(av,t));
+  const xs=[M,M+110,M+200,M+290,M+380];row(['Band','T20 s','EDT s','Range dB','Confidence'],xs,true);
+  av.forEach(b=>row([b.fc+' Hz',b.t20!=null?b.t20.toFixed(2):'-',b.edt!=null?b.edt.toFixed(2):'-',b.dr!=null?b.dr.toFixed(0):'-',b.dr==null?'':b.dr<25?'Too noisy':b.dr<35?'Low':'Good'],xs,false));
+  y-=4;para('Octave bands 125 Hz to 4 kHz are the usual reporting set for room reverberation (ISO 3382-2), as speech energy sits mainly in these bands. T20 uses the -5 to -25 dB decay slope; EDT uses 0 to -10 dB. 8 kHz is shown for information.',8.5)}
+ else para('Not measured.');
+ const pic=(url,w,h)=>{const dw=Math.min(430,CW),dh=dw*h/w;ensure(dh+8);drawImg(addImg(atob(url.split(',')[1]),w,h),M,y,dw,dh);y-=dh+8};
+ if(IR.caps.some(k=>k.ir)){ensure(255);h2('Impulse response');para(IR_TXT,8.5);pic(irTimeImg('image/jpeg'),900,380)}
+ if(nz&&nz.wf&&nz.wf.length>=3){ensure(255);h2('Waterfall: background noise test');para(WF_TXT_N(nz.dur),8.5);pic(wfImg(nz.wf,0.1,'image/jpeg'),900,380)}
+ const lcap=lastWfCap();if(lcap){ensure(255);h2('Waterfall: impulse capture');para(WF_TXT_I,8.5);pic(wfImg(lcap.wf,0.1,'image/jpeg'),900,380)}
+ const auds=audioItems();if(auds.length){ensure(90);h2('Audio recordings');para(AUD_TXT,8.5);auds.forEach(a=>para('- '+a.name+' ('+a.desc+')',8.5))}
+ if($('#fNotes').value.trim()){h2('Notes');para($('#fNotes').value)}
+ if(photos.length){h2('Photos');const w2=(CW-10)/2;
+  for(let i=0;i<photos.length;i+=2){const r2=[];for(const p of photos.slice(i,i+2)){const im=await loadImg(p);if(im)r2.push({p,w:im.naturalWidth,h:im.naturalHeight})}
+   const hs=r2.map(r=>Math.min(w2*r.h/r.w,230)),mh=Math.max(0,...hs);ensure(mh+8);
+   r2.forEach((r,j)=>{const dh=hs[j],dw=dh*r.w/r.h;drawImg(addImg(atob(r.p.split(',')[1]),r.w,r.h),M+j*(w2+10),y,dw,dh)});y-=mh+8}}
+ ensure(120);h2('Assumptions and processing notes');assumptionsList().forEach(x=>{para('- '+x,8.5);y-=2});
+ ensure(100);h2('Important');para(DISC1);y-=4;para(DISC2);
+ pages.push(cs);
+ const objs=['<< /Type /Catalog /Pages 2 0 R >>',null,'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>','<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'];
+ imgs.forEach(im=>objs.push(`<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.data.length} >>\nstream\n${im.data}\nendstream`));
+const attIds=[];auds.forEach(a=>{const data=bytesToBin(a.bytes);objs.push(`<< /Type /EmbeddedFile /Subtype /audio#2Fwav /Length ${data.length} /Params << /Size ${data.length} >> >>\nstream\n${data}\nendstream`);const eid=objs.length;objs.push(`<< /Type /Filespec /F (${pe(a.name)}) /UF (${pe(a.name)}) /Desc (${pe(a.desc)}) /EF << /F ${eid} 0 R >> >>`);attIds.push([a.name,objs.length])});
+ attIds.sort((x,y)=>x[0]<y[0]?-1:1);objs[0]='<< /Type /Catalog /Pages 2 0 R'+(attIds.length?` /Names << /EmbeddedFiles << /Names [${attIds.map(([n,id])=>`(${pe(n)}) ${id} 0 R`).join(' ')}] >> >>`:'')+' >>';
+ const xo=imgs.map((_,i)=>`/Im${i+1} ${5+i} 0 R`).join(' '),kids=[];
+ pages.forEach((c,i)=>{c+=`BT /F1 8 Tf ${M} 24 Td (${pe('Acoustics Meter Build '+BUILD+' - indicative only - page '+(i+1)+' of '+pages.length)}) Tj ET\n`;
+  objs.push(`<< /Length ${c.length} >>\nstream\n${c}\nendstream`);const cid=objs.length;
+  objs.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PWd} ${PHt}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << ${xo} >> >> /Contents ${cid} 0 R >>`);kids.push(objs.length)});
+ objs[1]=`<< /Type /Pages /Kids [${kids.map(k=>k+' 0 R').join(' ')}] /Count ${kids.length} >>`;
+ let out='%PDF-1.4\n',offs=[];objs.forEach((o,i)=>{offs.push(out.length);out+=`${i+1} 0 obj\n${o}\nendobj\n`});
+ const xr=out.length;out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`+offs.map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<< /Size ${objs.length+1} /Root 1 0 R >>\nstartxref\n${xr}\n%%EOF`;
+ const u=new Uint8Array(out.length);for(let i=0;i<out.length;i++)u[i]=out.charCodeAt(i)&255;
+ return new Blob([u],{type:'application/pdf'})}
+function pdfName(){const d=confirmedAt,q=n=>String(n).padStart(2,'0');return 'Acoustic-Report-'+($('#fSite').value.trim().replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'')||'site')+`-${d.getFullYear()}${q(d.getMonth()+1)}${q(d.getDate())}-${q(d.getHours())}${q(d.getMinutes())}.pdf`}
+function summaryText(){const av=avgCaps(),tm=tmid(av),nz=NZ.res;return `Indicative acoustic report: ${$('#fSite').value}\n${confirmedAt.toLocaleString('en-AU')}\nOperator: ${$('#fOp').value}\n`+(nz?`Background noise: ${nz.laeq.toFixed(1)} dB(A) LAeq\n`:'')+(tm?`RT60 (mid): ${tm.v.toFixed(2)} s\n`:'')+'Indicative only; not measured with professional equipment.'}
+$('#btnPdf').onclick=async()=>{try{const b=await makePDF(),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=pdfName();document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('PDF saved to your Downloads folder.')}catch(e){toast('PDF failed: '+e.message)}};
+$('#btnSharePdf').onclick=async()=>{try{const b=await makePDF(),f=new File([b],pdfName(),{type:'application/pdf'});
+ const all=[f,...audioItems().map(a=>new File([a.bytes],a.name,{type:'audio/wav'}))];
+ if(navigator.canShare&&navigator.canShare({files:all}))await navigator.share({files:all,title:'Acoustics Meter report',text:summaryText()});
+ else if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Acoustics Meter report',text:summaryText()});toast('The PDF was shared on its own because this phone could not share the audio files with it.')}
+ else{$('#btnPdf').click();toast('This browser cannot attach files directly, so the PDF was downloaded. Attach it from your email app.')}}catch(e){if(e.name!=='AbortError')toast('Share failed: '+e.message)}};
+
+/* ---------- waterfall + impulse response graphs ---------- */
+const WFN=160,WFF=Array.from({length:WFN},(_,i)=>20*Math.pow(1000,i/(WFN-1))),WFR={mode:null,rows:[],last:0,ring:[]};
+const WF_LUT=(()=>{const st=[[0,[8,8,40]],[.2,[22,48,160]],[.4,[32,170,200]],[.58,[60,200,100]],[.74,[235,225,60]],[.88,[240,130,30]],[1,[225,45,45]]],L=[];
+ for(let i=0;i<256;i++){const t=i/255;let k=0;while(k<st.length-2&&t>st[k+1][0])k++;const a=st[k],b=st[k+1],u=Math.max(0,Math.min(1,(t-a[0])/(b[0]-a[0])));L.push([0,1,2].map(j=>Math.round(a[1][j]+(b[1][j]-a[1][j])*u)))}return L})();
+const wfColor=v=>WF_LUT[Math.max(0,Math.min(255,Math.round((v-20)/90*255)))];
+function wfRowVals(w,N){const r=new Float32Array(WFN);for(let i=0;i<WFN;i++)r[i]=lineVal(WFF[i],w,N);return r}
+const rowCv=document.createElement('canvas');rowCv.width=WFN;rowCv.height=1;
+function rowImage(vals){const x=rowCv.getContext('2d'),im=x.createImageData(WFN,1);for(let i=0;i<WFN;i++){const c=wfColor(vals[i]);im.data[i*4]=c[0];im.data[i*4+1]=c[1];im.data[i*4+2]=c[2];im.data[i*4+3]=255}x.putImageData(im,0,0);return rowCv}
+function pushWfRow(vals){const cv=$('#wfCv'),d=sizeCv(cv);if(!d)return;const c=cv.getContext('2d'),W=cv.width,H=cv.height,rh=Math.max(1,Math.round(d)),g={L0:32*d,pw:W-40*d};
+ if(S.wfNeedClear){c.fillStyle='#000';c.fillRect(0,0,W,H);S.wfNeedClear=false}
+ c.imageSmoothingEnabled=false;c.drawImage(cv,0,0,W,H-rh,0,rh,W,H-rh);c.imageSmoothingEnabled=true;
+ c.drawImage(rowImage(vals),0,0,WFN,1,g.L0,0,g.pw,rh);
+ const K=SC();c.fillStyle=K.bg;c.fillRect(0,0,g.L0,H);c.fillStyle=K.text;c.font=(10*d)+'px system-ui,sans-serif';c.textAlign='right';c.textBaseline='top';c.fillText('now',g.L0-4*d,2*d);
+ c.textBaseline='bottom';c.fillText('-'+Math.round(H/rh*0.085)+'s',g.L0-4*d,H-2*d)}
+function wfRecord(t){if(t-WFR.last<100)return;const arm=IRc.state==='armed',post=IRc.state==='post';if(WFR.mode!=='noise'&&!arm&&!post)return;
+ WFR.last=t;buildCum();const r=wfRowVals('A');
+ if(WFR.mode==='noise')WFR.rows.push(r);
+ else if(arm){WFR.ring.push(r);if(WFR.ring.length>6)WFR.ring.shift()}
+ else{if(!IRc.wf)IRc.wf=WFR.ring.slice();IRc.wf.push(r)}}
+function wfCanvas(rows,dt,w,h,d){const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);
+ const L=48*d,R=62*d,T=22*d,B=28*d,pw=w-L-R,ph=h-T-B,n=rows.length,img=document.createElement('canvas');img.width=WFN;img.height=n;
+ const ic=img.getContext('2d'),im=ic.createImageData(WFN,n);rows.forEach((r,j)=>{for(let i=0;i<WFN;i++){const k=wfColor(r[i]),o=(j*WFN+i)*4;im.data[o]=k[0];im.data[o+1]=k[1];im.data[o+2]=k[2];im.data[o+3]=255}});ic.putImageData(im,0,0);
+ x.imageSmoothingEnabled=true;x.drawImage(img,0,0,WFN,n,L,T,pw,ph);
+ x.font=(10*d)+'px system-ui,sans-serif';x.fillStyle='#444';x.strokeStyle='#999';x.lineWidth=d;x.textBaseline='top';x.textAlign='center';
+ for(const [f,l] of [[50,'50'],[100,'100'],[200,'200'],[500,'500'],[1000,'1k'],[2000,'2k'],[5000,'5k'],[10000,'10k'],[20000,'20k']]){const px=L+pw*Math.log(f/20)/Math.log(1000);x.beginPath();x.moveTo(px,T+ph);x.lineTo(px,T+ph+4*d);x.stroke();x.fillText(l,px,T+ph+6*d)}
+ x.textAlign='left';x.fillText('Hz',L+pw+4*d,T+ph+6*d);
+ const total=n*dt,step=total>40?10:total>20?5:total>8?2:1;x.textAlign='right';x.textBaseline='middle';
+ for(let t=0;t<=total+1e-6;t+=step){const py=T+ph*t/total;x.beginPath();x.moveTo(L-4*d,py);x.lineTo(L,py);x.stroke();x.fillText(t+' s',L-6*d,py)}
+ const lx=L+pw+16*d,lw=12*d;for(let j=0;j<ph;j++){const v=110-90*j/ph,k=wfColor(v);x.fillStyle=`rgb(${k[0]},${k[1]},${k[2]})`;x.fillRect(lx,T+j,lw,1.5)}
+ x.fillStyle='#444';x.textAlign='left';x.textBaseline='middle';for(const v of [110,80,50,20]){const py=T+ph*(110-v)/90;x.fillText(v,lx+lw+4*d,py)}x.textBaseline='top';x.fillText('dB(A)',lx,4*d);
+ return c}
+const wfImg=(rows,dt,type)=>wfCanvas(rows,dt,900,380,1.5).toDataURL(type||'image/png',0.92);
+function broadbandIR(x,fs,trig,pkIdx){
+ const preEnd=Math.max(0,trig-Math.round(0.02*fs));let nf=0,cnt=0;
+ if(preEnd>0.15*fs){for(let i=0;i<preEnd;i++){nf+=x[i]*x[i];cnt++}}else{for(let i=Math.round(x.length*0.85);i<x.length;i++){nf+=x[i]*x[i];cnt++}}nf/=Math.max(cnt,1);
+ const len=x.length-pkIdx,e=new Float64Array(len);for(let i=0;i<len;i++){const v=x[pkIdx+i];e[i]=v*v}
+ const cs=new Float64Array(len+1);for(let i=0;i<len;i++)cs[i+1]=cs[i]+e[i];
+ const env=(i,W)=>(cs[Math.min(len,i+W)]-cs[i])/Math.max(1,Math.min(len,i+W)-i),W2=Math.round(0.02*fs),W1=Math.round(0.01*fs);let tc=len-1;
+ for(let i=W2;i<len-W2;i++){if(env(i,W2)<=nf*3.16){tc=i;break}}
+ const edc=new Float64Array(tc+1);let acc=0;for(let i=tc;i>=0;i--){acc+=e[i];edc[i]=acc}
+ const tcs=tc/fs,Tw=Math.min(3,Math.max(0.4,tcs*1.4)),n=300,e0=env(0,W1)+1e-30,out={Tw,tc:tcs,etc:[],edc:[]};
+ for(let j=0;j<n;j++){const idx=Math.min(len-1,Math.round(j/(n-1)*Tw*fs));out.etc.push(10*Math.log10(env(idx,W1)/e0+1e-12));out.edc.push(idx<=tc?10*Math.log10(edc[idx]/edc[0]+1e-12):null)}
+ return out}
+const IR_COL=['#f2a93b','#5ec8d8','#9bbf3a','#e0605a','#a78bfa','#d9c93a'];
+function drawIRTime(cv,d,caps,th){th=th||scrTheme();const c=cv.getContext('2d'),W=cv.width,H=cv.height;c.fillStyle=th.bg;c.fillRect(0,0,W,H);
+ const L=46*d,R=10*d,T=14*d,B=28*d,pw=W-L-R,ph=H-T-B,list=caps.filter(k=>k.ir);c.font=(11*d)+'px system-ui,sans-serif';
+ if(!list.length){c.fillStyle=th.text;c.textAlign='left';c.textBaseline='top';c.fillText('No impulse captured yet.',L,T+8*d);return}
+ const Tw=Math.max(...list.map(k=>k.ir.Tw)),ymin=-80,ymax=0,fx=t=>L+pw*t/Tw,vy=v=>T+ph*(1-(Math.max(ymin,Math.min(ymax,v))-ymin)/(ymax-ymin));
+ c.lineWidth=d;c.strokeStyle=th.grid;c.fillStyle=th.text;c.textAlign='right';c.textBaseline='middle';
+ for(let v=ymin;v<=ymax;v+=20){const y=vy(v);c.beginPath();c.moveTo(L,y);c.lineTo(W-R,y);c.stroke();c.fillText(String(v),L-5*d,y)}
+ const step=Tw>2?0.5:Tw>1?0.25:Tw>0.6?0.2:0.1;c.textAlign='center';c.textBaseline='top';
+ for(let t=0;t<=Tw+1e-6;t+=step){const x=fx(t);c.beginPath();c.moveTo(x,T);c.lineTo(x,T+ph);c.stroke();c.fillText(t.toFixed(2).replace(/0$/,''),x,T+ph+6*d)}
+ const last=list[list.length-1].ir,n=last.etc.length;c.beginPath();c.moveTo(fx(0),vy(ymin));
+ for(let j=0;j<n;j++)c.lineTo(fx(j/(n-1)*last.Tw),vy(last.etc[j]));c.lineTo(fx(last.Tw),vy(ymin));c.closePath();c.fillStyle=th.fill;c.fill();
+ list.forEach((k,i)=>{c.strokeStyle=IR_COL[i%IR_COL.length];c.lineWidth=2*d;c.beginPath();let on=false;k.ir.edc.forEach((v,j)=>{if(v==null){on=false;return}const x=fx(j/(k.ir.edc.length-1)*k.ir.Tw),y=vy(v);if(on)c.lineTo(x,y);else{c.moveTo(x,y);on=true}});c.stroke()});
+ c.fillStyle=th.text;c.textAlign='left';c.textBaseline='top';c.fillText('dB below peak. Time after impulse (s).',L+4*d,T+2*d);
+ list.forEach((k,i)=>{c.fillStyle=IR_COL[i%IR_COL.length];c.textAlign='right';c.fillText('Capture '+(caps.indexOf(k)+1),W-R-4*d,T+2*d+i*13*d)})}
+const irTimeImg=type=>{const c=document.createElement('canvas');c.width=900;c.height=380;drawIRTime(c,1.5,IR.caps,THEME.print);return c.toDataURL(type||'image/png',0.92)};
+const IR_TXT='The shaded curve is the energy-time curve of the last capture (10 ms smoothing, dB below the peak). Each line is a Schroeder backward-integrated decay curve for one capture; a steeper line means a shorter reverberation time. A curve stops where the decay reaches the noise floor.';
+const WF_TXT_N=n=>`Level (dB(A), 1/3-octave smoothing) by frequency across the ${n} s background noise test, with time running down the graph. Steady noise shows as an even band; a tone or hum shows as a bright vertical streak.`;
+const WF_TXT_I='Last impulse capture, from about 0.6 s before the impulse to about 5 s after, with time running down the graph. The impulse shows as a bright band that fades as the room decays; slower fading at a frequency means longer reverberation there.';
+function lastWfCap(){for(let i=IR.caps.length-1;i>=0;i--)if(IR.caps[i].wf&&IR.caps[i].wf.length>=3)return IR.caps[i];return null}
+function extraReportHtml(){let h='';(S.audUrls||[]).forEach(u=>URL.revokeObjectURL(u));S.audUrls=[];
+ if(IR.caps.some(k=>k.ir))h+=`<h2>Impulse response</h2><p style="font-size:12px;color:#444">${esc(IR_TXT)}</p><img class="chartimg" alt="Impulse response" src="${irTimeImg()}">`;
+ const nz=NZ.res;if(nz&&nz.wf&&nz.wf.length>=3)h+=`<h2>Waterfall: background noise test</h2><p style="font-size:12px;color:#444">${esc(WF_TXT_N(nz.dur))}</p><img class="chartimg" alt="Noise test waterfall" src="${wfImg(nz.wf,0.1)}">`;
+ const lc=lastWfCap();if(lc)h+=`<h2>Waterfall: impulse capture</h2><p style="font-size:12px;color:#444">${esc(WF_TXT_I)}</p><img class="chartimg" alt="Impulse capture waterfall" src="${wfImg(lc.wf,0.1)}">`;
+ {const items=audioItems();if(items.length){h+=`<h2>Audio recordings</h2><p style="font-size:12px;color:#444">${esc(AUD_TXT)}</p><ul style="font-size:13px">`;items.forEach(a=>{const u=URL.createObjectURL(new Blob([a.bytes],{type:'audio/wav'}));S.audUrls.push(u);h+=`<li>${esc(a.name)} (${esc(a.desc)}, ${(a.bytes.length/1048576).toFixed(1)} MB)<div class="noprint"><audio controls preload="none" src="${u}" style="width:100%;max-width:420px"></audio></div></li>`});h+='</ul>'}}
+ return h}
+
+/* ---------- frequency calibration (advanced) ---------- */
+const KEYF=[31.5,63,125,250,500,1000,2000,4000,8000,16000],fmtK=f=>f>=1000?(f/1000)+' kHz':f+' Hz';
+S.fcal={on:false,pts:{}};
+function corrAt(f){const xs=KEYF,ys=xs.map(k=>+S.fcal.pts[k]||0);if(f<=xs[0])return ys[0];if(f>=xs[xs.length-1])return ys[ys.length-1];let i=0;while(f>xs[i+1])i++;return ys[i]+(ys[i+1]-ys[i])*Math.log(f/xs[i])/Math.log(xs[i+1]/xs[i])}
+const anyCorr=()=>!!(S.fcal&&S.fcal.on&&KEYF.some(f=>Math.abs(+S.fcal.pts[f]||0)>0.05));
+function fftC(re,im,inv){const n=re.length;for(let i=1,j=0;i<n;i++){let bit=n>>1;for(;j&bit;bit>>=1)j^=bit;j^=bit;if(i<j){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t}}
+ for(let len=2;len<=n;len<<=1){const ang=2*Math.PI/len*(inv?1:-1),wr=Math.cos(ang),wi=Math.sin(ang);
+  for(let i=0;i<n;i+=len){let cr=1,ci=0;for(let j=0;j<len/2;j++){const a=i+j,b=a+len/2,tr=re[b]*cr-im[b]*ci,ti=re[b]*ci+im[b]*cr;re[b]=re[a]-tr;im[b]=im[a]-ti;re[a]+=tr;im[a]+=ti;const nr=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=nr}}}
+ if(inv)for(let i=0;i<n;i++){re[i]/=n;im[i]/=n}}
+function designFir(N,fs){const re=new Float64Array(N),im=new Float64Array(N);
+ for(let k=0;k<=N/2;k++){const f=Math.max(k*fs/N,1),m=Math.pow(10,Math.max(-20,Math.min(20,corrAt(f)))/20);re[k]=m;if(k>0&&k<N/2)re[N-k]=m}
+ fftC(re,im,true);const h=new Float32Array(N);for(let n=0;n<N;n++){const src=(n-N/2+N)%N;h[n]=re[src]*(0.5-0.5*Math.cos(2*Math.PI*n/(N-1)))}return h}
+function applyEq(){if(!S.ctx||!S.src||!S.pre)return;try{S.src.disconnect()}catch{}if(S.eq){try{S.eq.disconnect()}catch{}S.eq=null}
+ if(anyCorr()){const N=2048,buf=S.ctx.createBuffer(1,N,S.fs);buf.copyToChannel(designFir(N,S.fs),0);const cv=S.ctx.createConvolver();cv.normalize=false;cv.buffer=buf;S.eq=cv;S.src.connect(cv);cv.connect(S.pre)}
+ else S.src.connect(S.pre)}
+function saveFc(){store.set('fcal|'+S.label,S.fcal)}
+function renderFc(){const en=!!S.label,dis=en?'':' disabled';$('#fcOn').checked=!!S.fcal.on;$('#fcOn').disabled=!en;$('#fcFile').disabled=!en;$('#fcReset').disabled=!en;
+ $('#fcNote').textContent=en?'Corrections below are saved for: '+S.label:'Start the microphone first. Corrections are saved for the microphone in use.';
+ $('#fcRows').innerHTML='<div class="fcgrid h"><span>Freq</span><span>Now dB</span><span>Reference dB</span><span></span><span>Correction dB</span></div>'+KEYF.map((f,i)=>`<div class="fcgrid"><button class="fcf" id="fcp${i}" aria-label="Play a tone at ${fmtK(f)}">${fmtK(f)}</button><span id="fcm${i}">--</span><input type="number" inputmode="decimal" step="0.1" id="fcr${i}" placeholder="dB" aria-label="Reference level at ${fmtK(f)}"${dis}><button id="fca${i}" aria-label="Set correction at ${fmtK(f)}"${dis}>Set</button><input type="number" inputmode="decimal" step="0.5" id="fcc${i}" value="${f===1000?0:(+S.fcal.pts[f]||0)}" aria-label="Correction at ${fmtK(f)}"${f===1000?' disabled':dis}></div>`).join('');
+ KEYF.forEach((f,i)=>{$('#fcp'+i).onclick=()=>genToggle(f);$('#fca'+i).onclick=()=>fcApply(i);if(f!==1000)$('#fcc'+i).onchange=e=>{const v=Math.max(-20,Math.min(20,parseFloat(e.target.value)||0));S.fcal.pts[f]=v;e.target.value=v;S.fcal.on=true;$('#fcOn').checked=true;saveFc();applyEq();calUi()}})}
+function fcApply(i){const f=KEYF[i],refv=parseFloat($('#fcr'+i).value);if(!S.running)return toast('Start the microphone first.');if(!isFinite(refv))return toast('Enter the reference level first.');
+ const bi=TH3.indexOf(f),meas=10*Math.log10(S.bandSm[bi]+1e-20)+S.cal,delta=refv-meas;
+ if(f===1000){S.cal+=delta;S.calibrated=true;store.set('cal|'+S.label,{cal:S.cal});calUi();resetStats();toast('General offset changed by '+delta.toFixed(1)+' dB');return}
+ const nv=Math.max(-20,Math.min(20,(+S.fcal.pts[f]||0)+delta));S.fcal.pts[f]=+nv.toFixed(1);S.fcal.on=true;saveFc();renderFc();applyEq();calUi();toast(fmtK(f)+' correction is now '+S.fcal.pts[f]+' dB')}
+function calLive(){if(!S.running||!$('#tab-setup').classList.contains('active')||!$('#advCal').open)return;KEYF.forEach((f,i)=>{const el=$('#fcm'+i);if(el)el.textContent=(10*Math.log10(S.bandSm[TH3.indexOf(f)]+1e-20)+S.cal).toFixed(1)})}
+$('#fcOn').onchange=e=>{S.fcal.on=e.target.checked;saveFc();applyEq();calUi()};
+$('#fcReset').onclick=()=>{S.fcal={on:false,pts:{}};saveFc();renderFc();applyEq();calUi();toast('Frequency corrections cleared.')};
+$('#fcFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;const txt=await file.text(),pts=[];
+ txt.split(/\r?\n/).forEach(l=>{const m=l.trim().replace(/[;\t]/g,',').split(/[, ]+/);if(m.length>=2){const a=parseFloat(m[0]),b=parseFloat(m[1]);if(isFinite(a)&&isFinite(b)&&a>0)pts.push([a,b])}});
+ if(pts.length<3){e.target.value='';return toast('No frequency and dB pairs were found in that file.')}pts.sort((a,b)=>a[0]-b[0]);
+ const at=fr=>{if(fr<=pts[0][0])return pts[0][1];if(fr>=pts[pts.length-1][0])return pts[pts.length-1][1];let i=0;while(fr>pts[i+1][0])i++;return pts[i][1]+(pts[i+1][1]-pts[i][1])*Math.log(fr/pts[i][0])/Math.log(pts[i+1][0]/pts[i][0])};
+ const ref=at(1000),sg=$('#fcInv').checked?-1:1;KEYF.forEach(k=>{S.fcal.pts[k]=k===1000?0:+Math.max(-20,Math.min(20,sg*(at(k)-ref))).toFixed(1)});
+ S.fcal.on=true;saveFc();renderFc();applyEq();calUi();e.target.value='';toast('Imported '+pts.length+' points.')};
+function fcalNote(){if(!anyCorr())return '';return '; frequency correction on ('+KEYF.filter(f=>Math.abs(+S.fcal.pts[f]||0)>0.05).map(f=>fmtK(f)+' '+(S.fcal.pts[f]>0?'+':'')+S.fcal.pts[f]+' dB').join(', ')+')'}
+renderFc();
+
+/* ---------- audio recordings and assumptions ---------- */
+const REC={noise:false,chunks:[]};
+function procOn(on){if(!S.proc||!S.pre)return;try{S.pre.disconnect(S.proc)}catch{}if(on){try{S.pre.connect(S.proc)}catch{}}}
+function toPcm(chunks){let n=0;for(const c of chunks)n+=c.length;const out=new Int16Array(n);let o=0;for(const c of chunks){for(let i=0;i<c.length;i++){const v=Math.max(-1,Math.min(1,c[i]));out[o++]=v<0?v*32768:v*32767}}return out}
+function wavBytes(pcm,fs){const n=pcm.length*2,b=new Uint8Array(44+n),v=new DataView(b.buffer),w=(o,t)=>{for(let i=0;i<t.length;i++)b[o+i]=t.charCodeAt(i)};
+ w(0,'RIFF');v.setUint32(4,36+n,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,fs,true);v.setUint32(28,fs*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n,true);
+ for(let i=0;i<pcm.length;i++)v.setInt16(44+i*2,pcm[i],true);return b}
+const bytesToBin=u=>{let t='';for(let i=0;i<u.length;i+=8192)t+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return t};
+const slugName=()=>($('#fSite').value.trim().replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'')||'site');
+function audioItems(){if(!$('#fIncAudio').checked)return [];const out=[],base='Acoustics-Meter_'+slugName(),nz=NZ.res;
+ if(nz&&nz.pcm&&nz.pcm.length){const sec=nz.pcm.length/nz.fs;out.push({name:base+'_noise-test.wav',desc:'Background noise test, '+sec.toFixed(0)+' s',sec,bytes:nz.wav||(nz.wav=wavBytes(nz.pcm,nz.fs))})}
+ IR.caps.forEach((k,i)=>{if(k.pcm&&k.pcm.length){const sec=k.pcm.length/k.fs;out.push({name:`${base}_impulse-${i+1}.wav`,desc:`Impulse capture ${i+1}, ${sec.toFixed(1)} s`,sec,bytes:k.wav||(k.wav=wavBytes(k.pcm,k.fs))})}});return out}
+const AUD_TXT='The microphone signal for each test is attached to the PDF as a WAV file (mono, 16-bit). In Adobe Acrobat open the paperclip (Attachments) panel to play or save them. Some PDF viewers, including some built into browsers, do not show attachments, so the app can also share the recordings alongside the PDF.';
+function targetSourceNote(t){const n=(t.name||'')+' '+(t.ref||'');
+ if(/AS\/NZS 2107:2016 Table 1: /.test(t.name||''))return 'The limits for this row were supplied by the operator from Table 1 of the standard; the app did not read them from the standard itself.';
+ if(/S12\.60/.test(n))return 'The limits come from published summaries of the standard; check the standard for its conditions of use.';
+ return 'The limits were entered by the operator and have not been checked by the app.'}
+function assumptionsList(){const t=target(),nz=NZ.res,caps=IR.caps,a=[];
+ a.push(`Measured with ${$('#fMic').value||S.label||'the phone microphone'} on ${$('#fDev').value||'this phone'}. The app does not know the microphone's true sensitivity or frequency response.`);
+ a.push(S.calibrated?`General calibration applied: offset ${S.cal.toFixed(1)} dB, assumed correct for this microphone and unchanged since it was set.`:'The microphone was not calibrated. Absolute levels (dB) are indicative only and could be many dB out. Comparisons between frequency bands, captures and times are more reliable than the absolute values.');
+ a.push(anyCorr()?`Frequency correction was applied${fcalNote()}. The corrections are taken as entered by the operator and assumed valid at the microphone position.`:'No frequency correction was applied, so the microphone response is assumed flat across the audio range. Phone microphones are typically weak below about 50 Hz and can be uneven above 10 kHz.');
+ a.push(`Audio was captured at ${S.fs||'an unknown'} Hz. ${S.rawOk?'Echo cancellation, noise suppression and automatic gain control were reported off.':'The phone may have applied echo cancellation, noise suppression or automatic gain control, which can change levels and decay curves.'}`);
+ if(nz)a.push(`Background noise: LAeq is calculated from 1/3-octave band levels taken from an FFT (analysis window about ${Math.round(NF/(S.fs||48000)*1000)} ms), A-weighted, and averaged over ${nz.dur} s at one microphone position. Octave band levels are unweighted. The noise was ${nz.spread<=3?'steady':'not steady (spread '+nz.spread.toFixed(1)+' dB)'} across the five test segments. This is not a Class 1 or Class 2 sound level measurement (IEC 61672).`);
+ if(caps.length){const clipped=caps.filter(k=>k.clipped).length;
+  a.push(`Reverberation: ${caps.length} impulse capture(s) were averaged with equal weight, band by band. Source and microphone positions were not recorded and are assumed representative of the room; formal survey methods use several positions.`);
+  a.push('Octave band decays were found with 4th-order band-pass filters (125 Hz to 8 kHz). Decay curves use Schroeder backward integration, stopped where the signal falls to about 5 dB above the measured noise floor, with no further noise-floor correction.');
+  a.push('T20 is fitted between -5 and -25 dB and EDT over 0 to -10 dB. T20 is only given where the decay range is at least 25 dB (35 dB or more is preferred), so some bands, usually low frequencies, may be missing or less reliable.');
+  a.push('Mid-frequency reverberation time is the average of the 500 Hz and 1 kHz octave band values (T20, or EDT where T20 was not available).');
+  a.push(`The impulse source (balloon or clap) is assumed to have enough energy in every band; its spectrum was not equalised. ${clipped?clipped+' capture(s) clipped the microphone, which can distort the decay.':'No capture was reported as clipped.'}`)}
+ a.push(`Compared against ${t.name} (${t.ref}). ${targetSourceNote(t)}${isAS(t)?' Reverberation times in AS/NZS 2107 are for the occupied room, while the measurement was taken in the state shown under Room state.':''}`);
+ a.push("Room volume, temperature, humidity and occupancy were not measured by the app. Any preset chosen by room size relies on the operator's choice.");
+ a.push("The date and time come from the phone's clock. The address was typed or taken from GPS and confirmed by the operator.");
+ if((nz&&nz.wf&&nz.wf.length)||caps.some(k=>k.wf&&k.wf.length))a.push('The waterfalls show A-weighted 1/3-octave levels from the same FFT analysis, sampled every 0.1 s on a fixed 20 to 110 dB colour scale. They are for visual inspection and are not used in any pass or fail result.');
+ if(audioItems().length)a.push("The recordings are the microphone signal as processed by the app (including any frequency correction), saved as mono 16-bit WAV files. They may contain operator or other incidental noise.");
+ a.push('No measurement uncertainty has been calculated. The results are indicative only.');return a}
+
+/* ---------- fundamental frequencies ---------- */
+function findPeaksRaw(){const bw=S.fs/NF,P=S.pwSm,cum=S.cum,kMin=Math.max(6,Math.ceil(40/bw)),kMax=Math.min(NF/2-6,Math.floor(8000/bw)),ratio=Math.pow(2,1/3),out=[];
+ for(let k=kMin;k<=kMax;k++){const v=P[k];if(!(v>P[k-1]&&v>=P[k+1]))continue;const w=Math.max(10,Math.round(k*(ratio-1))),k0=Math.max(1,k-w),k1=Math.min(NF/2-1,k+w),cnt=(k1-k0+1)-9;if(cnt<6)continue;
+  const mean=((cum[k1+1]-cum[k0])-(cum[k+5]-cum[k-4]))/cnt,prom=10*Math.log10(v/(mean+1e-30));if(prom<9)continue;const db=10*Math.log10(2*v/(NF*Sw2)+1e-30)+S.cal;if(db<30)continue;
+  const a=Math.log(P[k-1]+1e-30),b=Math.log(v+1e-30),c=Math.log(P[k+1]+1e-30),den=a-2*b+c;let dl=den<0?0.5*(a-c)/den:0;dl=Math.max(-0.5,Math.min(0.5,dl));out.push({f:(k+dl)*bw,p:v,db,prom})}
+ out.sort((a,b)=>b.p-a.p);return out.slice(0,16)}
+function findF0(){const peaks=findPeaksRaw();if(peaks.length<3)return [];const bw=S.fs/NF,res=[],used=new Set();
+ for(let round=0;round<2;round++){const pool=peaks.filter(p=>!used.has(p));if(pool.length<3)break;const cands=new Set();
+  pool.forEach(pk=>{for(let n=1;n<=6;n++){const f0=pk.f/n;if(f0>=40&&f0<=2000)cands.add(Math.round(f0*4)/4)}});let best=null;
+  for(const f0 of cands){const hits=[];let hi=0;for(let h=1;h<=10;h++){const tf=f0*h;if(tf>9000)break;const tol=Math.max(2*bw,tf*0.012),m=pool.find(pk=>Math.abs(pk.f-tf)<=tol);if(m){hits.push([h,m]);hi=h}}
+   if(hits.length<3)continue;const score=hits.length-0.5*(hi-hits.length);if(!best||score>best.score+0.01||(Math.abs(score-best.score)<=0.01&&f0>best.f0))best={f0,hits,score}}
+  if(!best||best.score<2.5)break;let sw=0,sf=0;best.hits.forEach(([h,m])=>{sw+=m.p;sf+=m.p*(m.f/h)});
+  res.push({f:sf/sw,n:best.hits.length});best.hits.forEach(([h,m])=>used.add(m))}
+ return res}
+function trackF0(det,now){for(const t of S.f0t){let bi=-1,bd=1e9;det.forEach((d,i)=>{const r=Math.abs(Math.log(d.f/t.f));if(r<0.025&&r<bd){bd=r;bi=i}});if(bi>=0){const d=det[bi];det.splice(bi,1);t.f+=0.3*(d.f-t.f);t.n=d.n;t.seen=now;t.hits++}}
+ S.f0t=S.f0t.filter(t=>now-t.seen<1200);det.forEach(d=>{if(S.f0t.length<2)S.f0t.push({f:d.f,n:d.n,seen:now,hits:1})});
+ return S.f0t.filter(t=>t.hits>=2).map(t=>({f:t.f,n:t.n,p:pitch(t.f)}))}
+function drawF0(g,d){if(!S.showF0||!S.f0.length)return;const {c,fx,L0,T0,pw,ph}=g,col=isLight()?'#a21caf':'#e879f9';
+ c.save();c.beginPath();c.rect(L0,T0,pw,ph);c.clip();
+ S.f0.forEach(t=>{c.strokeStyle=col;c.lineWidth=2*d;c.setLineDash([]);const x=fx(t.f);let lastX=-1e9;c.beginPath();c.moveTo(x,T0);c.lineTo(x,T0+ph);c.stroke();
+  for(let h=2;h<=10;h++){const xh=fx(t.f*h);if(xh>L0+pw)break;c.fillStyle=col;c.beginPath();c.moveTo(xh-4*d,T0);c.lineTo(xh+4*d,T0);c.lineTo(xh,T0+8*d);c.fill();if(xh-lastX>13*d){c.font='600 '+(9*d)+'px system-ui,sans-serif';c.textAlign='center';c.textBaseline='top';c.fillText(String(h),xh,T0+9*d);lastX=xh}}});
+ c.restore();c.font='700 '+(10.5*d)+'px system-ui,sans-serif';c.textBaseline='middle';
+ S.f0.forEach((t,i)=>{const x=fx(t.f),txt=`F0 ${fmtF(t.f)} ${t.p.name} ${t.p.cents>=0?'+':''}${t.p.cents}\u00A2`,w=c.measureText(txt).width+10*d,h=16*d,bx=Math.max(L0+2*d,Math.min(L0+pw-w-2*d,x+6*d)),by=T0+ph*0.45+i*(h+3*d);
+  c.fillStyle=col;c.fillRect(bx,by,w,h);c.fillStyle='#1a0020';c.textAlign='left';c.fillText(txt,bx+5*d,by+h/2)})}
+function updateF0Line(){const el=$('#f0Line');if(!S.showF0){el.style.display='none';el.dataset.h='';return}el.style.display='block';
+ const h=S.f0.length?'Fundamental: '+S.f0.map(t=>`${fmtF(t.f)} (${t.p.name} ${t.p.cents>=0?'+':''}${t.p.cents}\u00A2, ${t.n} harmonics)`).join(', '):'Fundamental: none found';
+ if(el.dataset.h===h)return;el.dataset.h=h;el.textContent=h;el.style.fontSize='';let f=13;while(el.scrollWidth>el.clientWidth+1&&f>9){f-=0.5;el.style.fontSize=f+'px'}}
+
+/* ---------- resolution + tone generator ---------- */
+$('#selRes').value=String(S.res);
+$('#selRes').onchange=e=>{S.res=e.target.value==='fft'?'fft':+e.target.value;store.set('res2',S.res);resetPk();S.wfNeedClear=true;specNote();drawSpec(0)};
+const GEN={ctx:null,src:null,gain:null,f:0,mode:'sine',timer:null,on:false};
+const genDb=()=>-60+0.6*(+$('#genLvl').value);
+function genPinkBuf(ctx){const n=Math.round(ctx.sampleRate*6),b=ctx.createBuffer(1,n,ctx.sampleRate),d=b.getChannelData(0);let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0,mx=0;
+ for(let i=0;i<n;i++){const w=Math.random()*2-1;b0=0.99886*b0+w*0.0555179;b1=0.99332*b1+w*0.0750759;b2=0.969*b2+w*0.153852;b3=0.8665*b3+w*0.3104856;b4=0.55*b4+w*0.5329522;b5=-0.7616*b5-w*0.016898;const o=b0+b1+b2+b3+b4+b5+b6+w*0.5362;b6=w*0.115926;d[i]=o;if(Math.abs(o)>mx)mx=Math.abs(o)}
+ for(let i=0;i<n;i++)d[i]/=mx;return b}
+function genStop(){if(GEN.timer){clearTimeout(GEN.timer);GEN.timer=null}const c=GEN.ctx,src=GEN.src;
+ if(c){try{GEN.gain.gain.setTargetAtTime(0,c.currentTime,0.03)}catch{}setTimeout(()=>{try{src.stop()}catch{}try{c.close()}catch{}},200)}
+ GEN.ctx=GEN.src=GEN.gain=null;GEN.on=false;GEN.f=0;genUi()}
+function genStart(mode,f){if(GEN.on)genStop();const ctx=new(window.AudioContext||window.webkitAudioContext)();ctx.resume();const gain=ctx.createGain();gain.gain.value=0;gain.connect(ctx.destination);let src;
+ if(mode==='pink'){src=ctx.createBufferSource();src.buffer=genPinkBuf(ctx);src.loop=true}else{src=ctx.createOscillator();src.type='sine';src.frequency.value=f}
+ src.connect(gain);src.start();gain.gain.setTargetAtTime(Math.pow(10,genDb()/20),ctx.currentTime,0.05);
+ Object.assign(GEN,{ctx,src,gain,f,mode,on:true});const t=+$('#genStop').value;if(t>0)GEN.timer=setTimeout(genStop,t*1000);genUi()}
+function genToggle(f){if(GEN.on&&GEN.mode==='sine'&&GEN.f===f){genStop();return}$('#genMode').value='sine';$('#genF').value=f;genStart('sine',f)}
+function genUi(){$('#genBtn').textContent=GEN.on?'Stop':'Start tone';$('#genLvlTxt').textContent=genDb().toFixed(0)+' dBFS';
+ $('#genStatus').textContent=GEN.on?(GEN.mode==='pink'?'Playing pink noise':'Playing '+fmtF(GEN.f)+' sine'):'';
+ KEYF.forEach((f,i)=>{const b=$('#fcp'+i);if(b)b.classList.toggle('on',GEN.on&&GEN.mode==='sine'&&GEN.f===f)})}
+$('#genBtn').onclick=()=>{if(GEN.on){genStop();return}const mode=$('#genMode').value,f=Math.max(20,Math.min(20000,+$('#genF').value||1000));genStart(mode,f)};
+$('#genLvl').oninput=()=>{genUi();if(GEN.on)GEN.gain.gain.setTargetAtTime(Math.pow(10,genDb()/20),GEN.ctx.currentTime,0.03)};
+$('#genF').onchange=()=>{const f=Math.max(20,Math.min(20000,+$('#genF').value||1000));$('#genF').value=f;if(GEN.on&&GEN.mode==='sine'){GEN.f=f;GEN.src.frequency.setTargetAtTime(f,GEN.ctx.currentTime,0.02);genUi()}};
+$('#genMode').onchange=()=>{if(GEN.on)genStart($('#genMode').value,Math.max(20,Math.min(20000,+$('#genF').value||1000)))};
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&GEN.on)genStop()});
+genUi();
+
+/* ---------- display response ---------- */
+$('#selResp').value=String(store.get('resp2',4096));
+$('#selResp').onchange=e=>{const n=+e.target.value;store.set('resp2',n);initFFT(n);resetPk();S.fbTracks=[];S.slots=[];S.f0t=[];S.wfNeedClear=true;drawSpec(0)};
+
+/* ---------- setup sections + control help ---------- */
+$$('#tab-setup .card').forEach(card=>{const h=card.querySelector('header');card.classList.add('collapsible','collapsed');h.setAttribute('role','button');h.tabIndex=0;h.setAttribute('aria-expanded','false');
+ const tog=()=>{const c=card.classList.toggle('collapsed');h.setAttribute('aria-expanded',String(!c))};
+ h.addEventListener('click',tog);h.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tog()}})});
+const CTRL_HELP=[
+ ['btnMode','Spectrum style','Switches the spectrum between a continuous line and bars. Both use the Spectrum resolution set under Setup, Measurement settings.'],
+ ['btnCursor','Touch cursor','Lets you touch or drag on the spectrum to place a marker and read the frequency, note and level in a callout. It is off by default so the graph does not get in the way of scrolling. Tap the callout to remove the marker.'],
+ ['btnBands','Frequency bands','Shades the six bands (Sub-Bass, Bass, Low-Mids, Midrange, Upper-Mids / Presence, Brilliance / Air) behind the graph, with the level of each band in the selected weighting. Touch the graph with Touch cursor on to read what each band is for.'],
+ ['btnTones','Dominant tones','Marks and lists the three strongest steady tones with frequency, note, cents sharp or flat, and level. A tone has to stand about 10 dB above its surroundings and above roughly 28 dB to count.'],
+ ['btnPk','Peak levels','Shows the highest level reached at each frequency. A peak holds for about 1 second, then falls at 2 dB per second until it meets the live curve. A line under the graph gives the highest peak. The reset icon above MAX clears them.'],
+ ['btnF0','Fundamentals','Looks for a harmonic series and marks the fundamental frequency (F0), with numbered ticks at its harmonics 2 to 10. It needs at least three clear harmonics and can show two fundamentals at once.'],
+ ['btnFb','Feedback detect','Watches for a narrow peak (at least 12 dB above its surroundings) that stays on one frequency and either keeps rising (amber, building) or holds for about 2 seconds without harmonics (red, likely feedback). Flagged frequencies are marked FB. A steady pure tone from any source can look like feedback, so treat it as a prompt to listen. If it is feedback, a narrow cut at that frequency on the system equaliser, or less gain, is the usual remedy.'],
+ ['btnWf','Waterfall','Adds a scrolling picture of the spectrum over time, about 13 seconds, under the graph: frequency across, newest at the top, colour for level.'],
+ ['btnCtrlHelp','Button help','This list. You can also press and hold any control button for about half a second to see its details.']];
+INFO.controls=sel=>`<h2>Control buttons</h2><p class="note">A button with an orange outline is on.</p>`+CTRL_HELP.map(([id,t,d])=>`<div class="chelp${id===sel?' sel':''}" id="chelp-${id}"><b>${esc(t)}</b><br><span style="font-size:14px">${esc(d)}</span></div>`).join('');
+function showCtrlHelp(sel){$('#dlgBody').innerHTML=INFO.controls(sel);$('#dlg').showModal();if(sel){const el=$('#chelp-'+sel);if(el)el.scrollIntoView({block:'center'})}}
+$('#btnCtrlHelp').onclick=()=>showCtrlHelp('btnCtrlHelp');
+(function(){let timer=null,fired=false;$$('.ctrl button').forEach(b=>{
+ b.addEventListener('pointerdown',()=>{fired=false;clearTimeout(timer);timer=setTimeout(()=>{fired=true;showCtrlHelp(b.id)},550)});
+ ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>clearTimeout(timer)));
+ b.addEventListener('contextmenu',e=>e.preventDefault());
+ b.addEventListener('click',e=>{if(fired){e.stopImmediatePropagation();e.preventDefault();fired=false}},true)})})();
+
+/* ---------- glossary ---------- */
+const STANDARDS=[
+ {n:'AS/NZS 2107:2016 Acoustics: Recommended design sound levels and reverberation times for building interiors',by:'Standards Australia and Standards New Zealand',
+  u:'This is the main Australian reference. Table 1 gives a recommended range for background sound level (LAeq, dB(A)) and for reverberation time for each room type. The background sound level applies with the space unoccupied but ready for occupancy, and reverberation time is compared as the average of the 500 Hz and 1 kHz octave bands. Two Table 1 rows are built in (Boardroom and conference rooms: 30 to 40 dB(A), 0.6 to 0.8 s. Video/audio conference rooms: 30 to 40 dB(A), 0.2 to 0.4 s), and you can save more rows from your copy. Results outside a range are flagged, and below the lower noise level is a warning because there may be too little masking sound. Clause 6 defines the formal measurement method, which this app does not follow.',
+  note:'A paid standard. The page below shows its scope and how to buy it.',url:'https://store.standards.org.au/product/as-nzs-2107-2016',lab:'Standards Australia store page'},
+ {n:'ANSI/ASA S12.60-2010/Part 1 (R2020) Acoustical performance criteria for classrooms',by:'Acoustical Society of America, published through ANSI',
+  u:'Used for the classroom presets: reverberation time up to 0.6 s (rooms under 283 m3, 10,000 ft3) or 0.7 s (283 to 566 m3), and background noise up to 35 dB(A). For core learning spaces over 566 m3 the app uses a 40 dB(A) noise limit and no reverberation limit. The standard is voluntary unless a code or regulation adopts it.',
+  note:'',url:'https://blog.ansi.org/ansi/ansi-asa-s12-60-part-1-2010-r2020-school-acoustics/',lab:'ANSI summary page'},
+ {n:'ISO 3382-2:2008 Acoustics: Measurement of room acoustic parameters, Part 2: Reverberation time in ordinary rooms',by:'International Organization for Standardization (ISO)',
+  u:'Describes how to measure reverberation time in ordinary rooms: the procedure, apparatus, number of measurement positions, evaluation and test report. The app follows its general approach (octave bands from 125 Hz to 4 kHz, mid-frequency average, decay curve evaluation), but a phone test at one or a few positions is a screening check and does not meet its position and equipment requirements.',
+  note:'A paid standard. The page shows the scope.',url:'https://www.iso.org/standard/36201.html',lab:'ISO standard page'},
+ {n:'ISO 18233:2006 Acoustics: Application of new measurement methods in building and room acoustics',by:'International Organization for Standardization (ISO)',
+  u:'Gives guidelines and requirements for choosing the excitation signal, signal processing and environmental control, with requirements for linearity and time invariance. The app uses a balloon pop or hand clap as the excitation. A swept signal is the stronger method and is a possible later addition.',
+  note:'A paid standard. The page shows the scope.',url:'https://www.iso.org/standard/40408.html',lab:'ISO standard page'},
+ {n:'IEC 61672-1:2013 Electroacoustics: Sound level meters, Part 1: Specifications',by:'International Electrotechnical Commission (IEC)',
+  u:'Specifies sound level meters, including time-weighted and frequency-weighted levels and time-averaged levels, in two accuracy classes (class 1 and class 2). The app uses the same ideas (A, C and flat weighting, Fast and Slow time weighting), but a phone microphone and browser are not a class 1 or class 2 meter. Medium (500 ms) is an app setting, not an IEC one.',
+  note:'A paid standard. The page shows the scope.',url:'https://webstore.iec.ch/en/publication/5708',lab:'IEC webstore page'},
+ {n:'IEC 61260-1:2014 Electroacoustics: Octave-band and fractional-octave-band filters, Part 1: Specifications',by:'International Electrotechnical Commission (IEC)',
+  u:'Specifies octave-band and fractional-octave-band filters, including their nominal mid-band frequencies. The app draws 1/3-octave bands from 20 Hz to 20 kHz and reports octave bands (63 Hz to 8 kHz) using those centre frequencies. Band levels are calculated from an FFT rather than true filters.',
+  note:'A paid standard. The page shows the scope.',url:'https://webstore.iec.ch/en/publication/5063',lab:'IEC webstore page'},
+ {n:'ISO 16:1975 Acoustics: Standard tuning frequency (Standard musical pitch)',by:'International Organization for Standardization (ISO)',
+  u:'Sets the note A above middle C at 440 Hz. The app uses it to name the pitch of dominant tones and to show how many cents sharp or flat a tone is.',
+  note:'A paid standard. The page shows the scope.',url:'https://www.iso.org/standard/3601.html',lab:'ISO standard page'},
+ {n:'Work Health and Safety noise exposure standard (WHS Regulations, model Code of Practice: Managing noise and preventing hearing loss at work)',by:'Safe Work Australia',
+  u:'The exposure standard for noise is an LAeq,8h of 85 dB(A) or an LC,peak of 140 dB(C). The app quotes the 85 dB(A) figure in its sound level reference table. It is not a substitute for a workplace noise assessment.',
+  note:'',url:'https://safeworkaustralia.gov.au/safety-topic/hazards/noise',lab:'Safe Work Australia noise page'},
+ {n:'NIOSH research on smartphone sound level apps',by:'National Institute for Occupational Safety and Health (NIOSH), US CDC',
+  u:'NIOSH studied smartphone sound level apps and released its own Sound Level Meter app, which is for iPhone only. Its findings are why this app asks you to calibrate, shows an "Uncalibrated" warning, and labels results as indicative: phone measurements can be unreliable unless the device is calibrated.',
+  note:'',url:'https://www.cdc.gov/niosh/blogs/2017/sound-app.html',lab:'NIOSH / CDC page'},
+ {n:'ANSI/AVIXA A102.01 Audio coverage uniformity in enclosed listener areas',by:'AVIXA',
+  u:'Covers how evenly sound is spread across a listening area. It excludes spectral balance, maximum level and other system measures. Not used in the app yet; noted as a possible future coverage-mapping feature.',
+  note:'Not implemented.',url:'https://www.avixa.org/resources/standards/audio-coverage-uniformity',lab:'AVIXA standard page'}];
+const TERMS=[
+['A-weighting, dB(A)','A frequency weighting that reduces low and very high frequencies to approximate how the ear responds at moderate levels. It is the default for noise limits and is shown as dB-A.'],
+['A4, concert pitch','The note A above middle C, set at 440 Hz (ISO 16). Note names in the app are based on it.'],
+['AGC (automatic gain control)','A phone feature that changes microphone gain to keep levels steady. It distorts measurements, so the app asks for it to be off.'],
+['Average (AVG, Leq)','The energy average of the level since the last reset, also called the equivalent continuous level.'],
+['Background noise','Sound present in a room without the sound being tested, such as air-conditioning or traffic. The noise test reports it as LAeq in dB(A).'],
+['Band, frequency band','A range of frequencies. The Live graph can show Sub-Bass (20 to 60 Hz), Bass (60 to 250 Hz), Low-Mids (250 to 500 Hz), Midrange (500 Hz to 2 kHz), Upper-Mids / Presence (2 to 6 kHz) and Brilliance / Air (6 to 20 kHz).'],
+['Build number','The label under the app name in the form YYYYMMDD-N. The date is the build day and N counts the changes made that day.'],
+['C-weighting, dB(C)','A flatter weighting that keeps more bass than A-weighting. Often used for loud or peak sounds.'],
+['Calibration, offset','Aligning the readings to a known level, for example a 94 dB calibrator. The offset is the number of dB added to the raw level.'],
+['Callout','The box on the spectrum graph that shows the frequency, pitch and level at the marker you place by touching the graph.'],
+['Cents','One hundredth of a semitone. A plus sign means sharp and a minus sign means flat compared with the nearest note.'],
+['Clipping','The input is too loud for the microphone, so the waveform is flattened and readings are not valid. Move away from the source.'],
+['Decay range (Range)','The gap in dB between the impulse peak and the noise floor in a band. About 35 dB or more is needed for a reliable T20.'],
+['Decibel (dB)','A logarithmic unit. An increase of 10 dB is ten times the power, and 3 dB is about double.'],
+['Dominant tone','One of the strongest steady, narrow peaks in the spectrum, ranked by level in the selected weighting.'],
+['EDT (early decay time)','The decay rate over the first 10 dB, extrapolated to 60 dB. It relates to how reverberant a room feels.'],
+['External microphone','A USB or Bluetooth microphone. Bluetooth microphones are usually voice-processed and not suitable for measurement.'],
+['Fast, Medium, Slow','Time weightings that set how quickly the reading follows the sound: 125 ms, 500 ms (an app setting, not an IEC one) and 1 s.'],
+['Feedback (acoustic)','A howl caused when a microphone picks up its own loudspeaker output and amplifies it again. It shows as a narrow peak that rises or holds on one frequency.'],
+['FFT (fast Fourier transform)','The calculation that splits a sound into its frequencies. The app uses windows of 8192 samples, about 0.17 s at 48 kHz.'],
+['Flat, no weighting, dB(Z)','No frequency weighting. All frequencies count equally.'],
+['Frequency (Hz, kHz)','How many cycles per second a sound repeats. Higher frequency sounds higher in pitch. 1 kHz is 1000 Hz.'],
+['Fundamental, harmonic','The fundamental is the lowest frequency of a tone. Harmonics are whole-number multiples of it (2x, 3x and so on).'],
+['Impulse response','How a room responds to a short, sharp sound. The decay of that response gives the reverberation time.'],
+['LAeq','The A-weighted equivalent continuous sound level: the steady level that holds the same sound energy as the measured sound over the same time.'],
+['Log axis','A scale where each equal step is a constant ratio, not a constant difference. The frequency axis is logarithmic, so each octave takes the same width.'],
+['Masking','One sound covering up another. Very low background noise can leave speech and small noises easy to hear and reduce privacy.'],
+['Max, Min','The highest and lowest levels reached since the last reset, in the selected time weighting.'],
+['Narrowband','A spectrum with very fine frequency steps (about 5.9 Hz per FFT bin). The app uses it to find tones and feedback.'],
+['Noise floor','The quietest level a microphone can measure. Phone microphones typically bottom out around 30 to 35 dB(A).'],
+['Octave band','A frequency band whose top frequency is twice its bottom. Centre frequencies are 63, 125, 250, 500 Hz, 1, 2, 4 and 8 kHz.'],
+['One-third octave band','A band three times narrower than an octave. The app shows 31 of them from 20 Hz to 20 kHz.'],
+['Peak, peak hold','The highest level reached. The orange ticks on the bar graph hold the peak and fall slowly.'],
+['Pitch, note name','The musical note a tone corresponds to, such as G4, with cents showing how far it is from that note.'],
+['Prominence','How many dB a spectrum peak stands above the spectrum around it. Feedback needs at least 12 dB.'],
+['Raw capture','Microphone audio without echo cancellation, noise suppression or automatic gain control.'],
+['Reverberation time (RT60)','The time for sound to fall by 60 dB after the source stops. Longer means a more echoey room.'],
+['Room state','Whether the room was unoccupied or occupied and whether building services were on or off during the measurement.'],
+['Schroeder backward integration','A method that turns a noisy impulse response into a smooth decay curve by adding up the energy from the end backwards.'],
+['Sound pressure level (SPL)','The level of sound pressure in dB relative to 20 micropascals. The meter on the Live page shows it.'],
+['Spectrum','How sound energy is spread across frequency.'],
+['Steadiness spread','In the noise test, the difference between the highest and lowest of five segment levels. 3 dB or less means the noise was steady.'],
+['T20, T30','Decay times from the slope of the decay curve between -5 and -25 dB (T20) or -5 and -35 dB (T30), extended to a 60 dB fall.'],
+['Time weighting','How quickly the level reading reacts to changes (Fast, Medium or Slow).'],
+['Tmid (mid-frequency reverberation time)','The average of the 500 Hz and 1 kHz octave band values. AS/NZS 2107 compares reverberation time this way.'],
+['Weighting (frequency weighting)','A filter that adjusts how much each frequency counts in a level reading: A, C or flat.'],
+['Within range, Above range, Below range','How a result compares with a target range. Above is a fail for noise and reverberation; below is a warning.']];
+TERMS.push(
+['General calibration','One offset in dB that makes the whole microphone read correctly at 1 kHz, usually set with a 94 dB calibrator. It is the default and is on the Setup tab.'],
+['Frequency calibration (advanced)','Corrections in dB at key frequencies (31.5 Hz to 16 kHz) that make up for the microphone not being equally sensitive at every frequency. Relative to 1 kHz and saved per microphone.'],
+['Correction curve','The smooth curve through the frequency corrections, applied to everything the microphone hears while frequency correction is on.'],
+['Peak levels','An option on the Live page that holds the highest level reached at each frequency until you press reset, and shows the highest of all with its frequency.'],
+['Waterfall (spectrogram)','A picture of the spectrum over time. Frequency runs across, time runs down and colour shows the level.'],
+['Touch cursor','An option that places a marker on the spectrum graph where you touch or drag, with a callout of the frequency, pitch and level.'],
+['Pink noise','Noise with equal energy in every octave. It sounds even to the ear and shows as a flat line on a 1/3-octave graph, so it is used to check a system.'],
+['Room mode','A resonance of the room itself at frequencies set by its dimensions. It makes some bass notes boom and others fade, and is most noticeable below about 300 Hz.'],
+['Parametric EQ, graphic EQ','Tools for raising or cutting the level of chosen frequencies. A parametric EQ lets you set the frequency, amount and width; a graphic EQ has fixed bands with sliders.'],
+['Q (quality factor)','How narrow an EQ filter is. A high Q (5 to 10) affects a very small range around its frequency; a low Q (1 to 2) is broad.'],
+['Notch cut','A narrow EQ cut at one frequency, often used to stop feedback or tame a single room mode.']);
+TERMS.push(
+['Display response','How long a stretch of sound the spectrum looks at each time: Fast (about 45 ms) reacts soonest, Detailed (about 170 ms) shows the most low-frequency detail. A shorter window means less delay but fewer details at low frequencies.'],
+['Spectrum resolution','How narrow each frequency band is on the Live graph, from a full octave down to about 6 Hz (narrowband FFT). Narrower bands show more detail and read lower for broad noise, while steady tones read the same.'],
+['Fundamental frequency (F0)','The lowest frequency of a musical or periodic sound, which sets its pitch. The harmonics are multiples of it. The app marks it, and its harmonics 2 to 10, when it finds a harmonic series.'],
+['Tone generator','A built-in source of a steady sine tone or pink noise on the Setup tab, used to calibrate the microphone at key frequencies and to check a sound system.'],
+['Peak hold (1 s)','Peak levels stay at their highest point for about a second, then fall at 2 dB per second until they meet the live curve.']);
+function renderGloss(){
+ $('#glStd').innerHTML=STANDARDS.map(x=>`<div class="card gcard"><header><h2>${esc(x.n)}</h2></header><div class="body"><p><b>Issued by:</b> ${esc(x.by)}</p><p>${esc(x.u)}</p>${x.note?`<p class="note">${esc(x.note)}</p>`:''}<a class="glink" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.lab)}: ${esc(x.url)}</a></div></div>`).join('')+'<p class="note">Links open the publishing body\'s own page. Most standards are sold, so these pages show the scope and how to obtain the full text.</p>';
+ const q=($('#glSearch').value||'').trim().toLowerCase();
+ const list=TERMS.filter(t=>!q||t[0].toLowerCase().includes(q)||t[1].toLowerCase().includes(q)).sort((a,b)=>a[0].localeCompare(b[0]));
+ $('#glTermList').innerHTML=list.length?list.map(t=>`<dt>${esc(t[0])}</dt><dd>${esc(t[1])}</dd>`).join(''):'<dd>No matching terms.</dd>'}
+$('#glSearch').addEventListener('input',renderGloss);
+function showGl(w){[['Std','#glStd'],['Term','#glTerm'],['Eq','#glEq']].forEach(([k,sel])=>{$('#gs'+k).classList.toggle('on',k===w);$(sel).style.display=k===w?'block':'none'})}
+$('#gsStd').onclick=()=>showGl('Std');$('#gsTerm').onclick=()=>showGl('Term');$('#gsEq').onclick=()=>showGl('Eq');
+renderGloss();
+
+/* ---------- theme ---------- */
+function applyTheme(v,redraw){const t=v==='system'?(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):v;document.documentElement.setAttribute('data-theme',t);
+ const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='light'?'#f2f3f5':'#17191d';if(redraw){S.wfNeedClear=true;drawSpec(0);renderIR();renderNoise()}}
+$('#selTheme').value=store.get('theme','dark');applyTheme(store.get('theme','dark'),false);
+$('#selTheme').onchange=e=>{store.set('theme',e.target.value);applyTheme(e.target.value,true)};
+try{matchMedia('(prefers-color-scheme: light)').addEventListener('change',()=>{if(store.get('theme','dark')==='system')applyTheme('system',true)})}catch{}
+
+/* ---------- installable app (PWA) ---------- */
+let deferredInstall=null;
+function appStatus(){const st=matchMedia('(display-mode: standalone)').matches,web=/^https?:$/.test(location.protocol)&&('serviceWorker' in navigator);
+ let t=st?'Running as an installed app.':'Running in the browser.';
+ if(!web)t+=' To install it, open it from http://localhost or an https address, not from a file.';
+ else t+=navigator.serviceWorker.controller?' Ready to work offline.':' Preparing for offline use: reload once.';
+ $('#appStatus').textContent=t}
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){navigator.serviceWorker.register('./sw.js').then(()=>navigator.serviceWorker.ready).then(appStatus).catch(()=>{});navigator.serviceWorker.addEventListener('controllerchange',appStatus)}
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('#btnInstall').style.display='inline-block'});
+$('#btnInstall').onclick=async()=>{if(!deferredInstall)return;deferredInstall.prompt();try{await deferredInstall.userChoice}catch{}deferredInstall=null;$('#btnInstall').style.display='none'};
+addEventListener('appinstalled',()=>{$('#btnInstall').style.display='none';toast('Installed. Open it from your home screen.');appStatus()});
+appStatus();
+
+/* ---------- Live page grid layout ---------- */
+const GRID_COLS=12,ROWH=30,GAPPX=8;
+const TILES={mic:{minW:3,minH:2},gauge:{minW:4,minH:7},ref:{minW:3,minH:2},led:{minW:2,minH:1},spec:{minW:4,minH:5},wf:{minW:3,minH:3},info:{minW:3,minH:3},ctrl:{minW:3,minH:3}};
+const DEF_LAYOUT={
+ port:{mic:[0,0,12,2],gauge:[0,2,12,8],ref:[0,10,12,2],led:[0,12,12,1],spec:[0,13,12,9],wf:[0,22,12,5],info:[0,27,12,5],ctrl:[0,32,12,4]},
+ land:{mic:[0,0,4,2],gauge:[0,2,4,8],ref:[0,10,4,2],led:[0,12,4,1],ctrl:[0,13,4,6],spec:[4,0,8,9],wf:[4,9,8,5],info:[4,14,8,5]}};
+const orient=()=>innerWidth>=640&&innerWidth>innerHeight?'land':'port';
+function loadLayout(o){const sv=store.get('layout2:'+o,null),L={};
+ for(const id in TILES){const a=(sv&&Array.isArray(sv[id])&&sv[id].length===4?sv[id]:DEF_LAYOUT[o][id]),t=TILES[id];
+  let w=Math.max(t.minW,Math.min(GRID_COLS,a[2])),h=Math.max(t.minH,Math.min(40,a[3])),x=Math.max(0,Math.min(GRID_COLS-w,a[0])),y=Math.max(0,a[1]);L[id]={x,y,w,h}}return L}
+function saveLayout(){const o={};for(const id in S.layout){const t=S.layout[id];o[id]=[t.x,t.y,t.w,t.h]}store.set('layout2:'+S.layoutKey,o)}
+function compact(L,ids,active){const out={},placed=[],hit=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+ if(active&&ids.includes(active)){const a={...L[active]};out[active]=a;placed.push(a)}
+ for(const id of ids.slice().sort((a,b)=>(L[a].y-L[b].y)||(L[a].x-L[b].x))){if(id===active)continue;const o={...L[id]};o.y=0;while(placed.some(p=>hit(o,p)))o.y++;out[id]=o;placed.push(o)}
+ return out}
+function applyLayout(active){const o=orient();if(S.layoutKey!==o){S.layoutKey=o;S.layout=loadLayout(o)}
+ const arr=document.body.classList.contains('arr'),ids=Object.keys(TILES).filter(id=>id!=='wf'||S.showWf||arr);
+ Object.keys(TILES).forEach(id=>{$('#t-'+id).style.display=ids.includes(id)?'':'none'});
+ const P=compact(S.layout,ids,active);S.placed=P;
+ ids.forEach(id=>{const t=P[id],el=$('#t-'+id);el.style.gridColumn=`${t.x+1} / span ${t.w}`;el.style.gridRow=`${t.y+1} / span ${t.h}`});
+ requestAnimationFrame(()=>{if(!S.running)drawSpec(-1)})}
+let GEST=null;
+const tilesEl=$('#tiles');
+tilesEl.addEventListener('pointerdown',e=>{if(!document.body.classList.contains('arr'))return;const rz=e.target.closest('.rz'),hd=e.target.closest('.tile>header'),tile=e.target.closest('.tile');if(!tile||(!rz&&!hd))return;
+ e.preventDefault();const id=tile.dataset.id,box=tilesEl.getBoundingClientRect(),colW=(box.width-GAPPX*(GRID_COLS-1))/GRID_COLS,p=S.placed[id];
+ for(const k in S.placed)S.layout[k]={...S.placed[k]};
+ GEST={id,mode:rz?'rz':'mv',sx:e.clientX,sy:e.clientY,sc:$('main').scrollTop,x0:p.x,y0:p.y,w0:p.w,h0:p.h,px:colW+GAPPX,py:ROWH+GAPPX,tile};
+ try{tile.setPointerCapture(e.pointerId)}catch{}tile.classList.add('dragging');$('#ph').classList.add('on')});
+tilesEl.addEventListener('pointermove',e=>{if(!GEST)return;const G=GEST,m=$('main'),mr=m.getBoundingClientRect();
+ if(e.clientY>mr.bottom-60)m.scrollTop+=16;else if(e.clientY<mr.top+60)m.scrollTop-=16;
+ const dx=e.clientX-G.sx,dy=e.clientY-G.sy+(m.scrollTop-G.sc),t=TILES[G.id],L=S.layout[G.id];
+ if(G.mode==='mv'){L.x=Math.max(0,Math.min(GRID_COLS-L.w,Math.round(G.x0+dx/G.px)));L.y=Math.max(0,Math.round(G.y0+dy/G.py))}
+ else{L.w=Math.max(t.minW,Math.min(GRID_COLS-L.x,G.w0+Math.round(dx/G.px)));L.h=Math.max(t.minH,Math.min(40,G.h0+Math.round(dy/G.py)))}
+ applyLayout(G.id);const q=S.placed[G.id],ph=$('#ph');ph.style.gridColumn=`${q.x+1} / span ${q.w}`;ph.style.gridRow=`${q.y+1} / span ${q.h}`;
+ G.tile.style.transform=G.mode==='mv'?`translate(${dx-(q.x-G.x0)*G.px}px,${dy-(q.y-G.y0)*G.py}px)`:''});
+const endGesture=()=>{if(!GEST)return;const G=GEST;GEST=null;G.tile.classList.remove('dragging');G.tile.style.transform='';$('#ph').classList.remove('on');
+ for(const k in S.placed)S.layout[k]={...S.placed[k]};saveLayout();applyLayout()};
+tilesEl.addEventListener('pointerup',endGesture);tilesEl.addEventListener('pointercancel',endGesture);
+function resetLayout(){store.set('layout2:'+orient(),null);S.layoutKey=null;applyLayout();toast('Live layout reset for this orientation.')}
+$('#btnLayoutReset').onclick=resetLayout;$('#btnLayoutReset2').onclick=resetLayout;
+addEventListener('resize',()=>{S.wfNeedClear=true;applyLayout()});
+
+/* ---------- init ---------- */
+(function init(){initFFT(+store.get('resp2',4096));applyLayout();refreshDevices();renderIR();ledUpdate(0,0);drawSpec();syncRunUi();
+ setStatus('Mic off','');})();
+</script>
+</body>
+</html>
